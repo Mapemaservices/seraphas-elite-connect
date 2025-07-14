@@ -60,7 +60,7 @@ const LiveStreams = () => {
       .from('live_streams')
       .select(`
         *,
-        profiles:streamer_id (
+        profiles!live_streams_streamer_id_fkey (
           first_name,
           profile_image_url
         )
@@ -69,11 +69,38 @@ const LiveStreams = () => {
       .order('created_at', { ascending: false });
 
     if (error) {
-      toast({
-        title: "Error loading streams",
-        description: error.message,
-        variant: "destructive"
-      });
+      console.log('Error loading streams:', error);
+      // Fallback query without the join if the foreign key doesn't exist yet
+      const { data: streamsData, error: streamsError } = await supabase
+        .from('live_streams')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false });
+
+      if (streamsError) {
+        toast({
+          title: "Error loading streams",
+          description: streamsError.message,
+          variant: "destructive"
+        });
+      } else {
+        // Manually get profiles for each stream
+        const streamsWithProfiles = await Promise.all(
+          (streamsData || []).map(async (stream) => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('first_name, profile_image_url')
+              .eq('user_id', stream.streamer_id)
+              .single();
+            
+            return {
+              ...stream,
+              profiles: profile
+            };
+          })
+        );
+        setStreams(streamsWithProfiles);
+      }
     } else {
       setStreams(data || []);
     }

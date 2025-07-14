@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, ArrowLeft, Camera, MapPin, Calendar, User } from 'lucide-react';
+import { Heart, ArrowLeft, Camera, MapPin, Calendar, User as UserIcon } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import type { User } from '@supabase/supabase-js';
@@ -141,7 +141,7 @@ const Profile = () => {
               <Avatar className="w-32 h-32 mx-auto">
                 <AvatarImage src={profile?.profile_image_url || ""} />
                 <AvatarFallback className="text-2xl bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                  {profile?.first_name?.[0] || user?.email?.[0] || <User />}
+                  {profile?.first_name?.[0] || user?.email?.[0] || <UserIcon />}
                 </AvatarFallback>
               </Avatar>
               {isEditing && (
