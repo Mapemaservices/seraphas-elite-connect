@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -117,7 +118,10 @@ const Dashboard = () => {
 
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card 
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => navigate('/profile')}
+          >
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center text-lg">
                 <UserIcon className="w-5 h-5 mr-2 text-pink-500" />
@@ -131,7 +135,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card 
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => navigate('/discover')}
+          >
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center text-lg">
                 <Heart className="w-5 h-5 mr-2 text-pink-500" />
@@ -145,7 +152,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card 
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => navigate('/messages')}
+          >
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center text-lg">
                 <MessageCircle className="w-5 h-5 mr-2 text-pink-500" />
@@ -159,7 +169,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+          <Card 
+            className="hover:shadow-lg transition-shadow cursor-pointer"
+            onClick={() => navigate('/live-streams')}
+          >
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center text-lg">
                 <Video className="w-5 h-5 mr-2 text-pink-500" />

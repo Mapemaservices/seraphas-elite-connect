@@ -14,7 +14,141 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      live_streams: {
+        Row: {
+          created_at: string
+          description: string | null
+          ended_at: string | null
+          id: string
+          is_active: boolean | null
+          is_premium_only: boolean | null
+          streamer_id: string
+          title: string
+          viewer_count: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_premium_only?: boolean | null
+          streamer_id: string
+          title: string
+          viewer_count?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_premium_only?: boolean | null
+          streamer_id?: string
+          title?: string
+          viewer_count?: number | null
+        }
+        Relationships: []
+      }
+      matches: {
+        Row: {
+          created_at: string
+          id: string
+          matched_user_id: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          matched_user_id: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          matched_user_id?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_read: boolean | null
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          age: number | null
+          bio: string | null
+          created_at: string
+          email: string | null
+          first_name: string | null
+          id: string
+          interests: string[] | null
+          is_premium: boolean | null
+          last_name: string | null
+          location: string | null
+          profile_image_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          age?: number | null
+          bio?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          interests?: string[] | null
+          is_premium?: boolean | null
+          last_name?: string | null
+          location?: string | null
+          profile_image_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          age?: number | null
+          bio?: string | null
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          interests?: string[] | null
+          is_premium?: boolean | null
+          last_name?: string | null
+          location?: string | null
+          profile_image_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
