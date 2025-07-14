@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Heart, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -19,24 +20,51 @@ const Login = () => {
     password: ''
   });
 
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate('/dashboard');
+      }
+    };
+    
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        navigate('/dashboard');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      // Mock authentication - replace with actual auth logic
-      if (formData.email && formData.password) {
-        localStorage.setItem('authToken', 'mock-token');
-        localStorage.setItem('userEmail', formData.email);
-        
+      if (!formData.email || !formData.password) {
+        throw new Error('Please fill in all fields');
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
         toast({
           title: "Welcome back!",
-          description: "You've been successfully logged in.",
+          description: "You have successfully signed in.",
         });
-        
-        navigate('/dashboard');
-      } else {
-        throw new Error('Please fill in all fields');
+        // Navigation will be handled by the auth state change listener
       }
     } catch (error) {
       toast({
@@ -72,13 +100,13 @@ const Login = () => {
           </div>
           
           <Badge className="bg-gradient-to-r from-pink-500 to-purple-600 text-white border-0">
-            Welcome Back
+            Premium Dating Experience
           </Badge>
         </div>
 
         <Card className="border-gray-200 shadow-lg">
           <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-gray-900">Login</CardTitle>
+            <CardTitle className="text-2xl font-bold text-gray-900">Welcome Back</CardTitle>
             <CardDescription className="text-gray-600">
               Sign in to your Seraphas account
             </CardDescription>
@@ -120,15 +148,6 @@ const Login = () => {
                 </div>
               </div>
               
-              <div className="flex items-center justify-between">
-                <Link
-                  to="/forgot-password"
-                  className="text-sm text-pink-600 hover:text-pink-700 hover:underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
-              
               <Button
                 type="submit"
                 className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-0"
@@ -138,7 +157,7 @@ const Login = () => {
               </Button>
             </form>
             
-            <div className="mt-6 text-center">
+            <div className="mt-6 text-center space-y-2">
               <p className="text-gray-600">
                 Don't have an account?{' '}
                 <Link
@@ -146,6 +165,14 @@ const Login = () => {
                   className="text-pink-600 hover:text-pink-700 font-medium hover:underline"
                 >
                   Sign up
+                </Link>
+              </p>
+              <p className="text-sm text-gray-500">
+                <Link
+                  to="/forgot-password"
+                  className="text-pink-600 hover:text-pink-700 hover:underline"
+                >
+                  Forgot your password?
                 </Link>
               </p>
             </div>

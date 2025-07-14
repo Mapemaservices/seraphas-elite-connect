@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Heart, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Signup = () => {
   const navigate = useNavigate();
@@ -40,29 +41,39 @@ const Signup = () => {
         throw new Error('You must be at least 18 years old to join');
       }
 
-      // Mock registration - replace with actual auth logic
-      if (formData.email && formData.password && formData.gender) {
-        localStorage.setItem('authToken', 'mock-token');
-        localStorage.setItem('userEmail', formData.email);
-        localStorage.setItem('userProfile', JSON.stringify({
-          email: formData.email,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          age: formData.age,
-          gender: formData.gender,
-          city: formData.city,
-          bio: formData.bio,
-          isSubscribed: false
-        }));
-        
+      if (!formData.email || !formData.password || !formData.gender || !formData.firstName || !formData.lastName) {
+        throw new Error('Please fill in all required fields');
+      }
+
+      // Sign up with Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            age: formData.age,
+            gender: formData.gender,
+            city: formData.city,
+            bio: formData.bio
+          }
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.user) {
         toast({
           title: "Welcome to Seraphas!",
-          description: "Your account has been created successfully.",
+          description: "Please check your email to verify your account.",
         });
         
-        navigate('/dashboard');
-      } else {
-        throw new Error('Please fill in all required fields');
+        // Redirect to login page
+        navigate('/login');
       }
     } catch (error) {
       toast({
