@@ -23,7 +23,7 @@ interface LiveStream {
   profiles?: {
     first_name: string | null;
     profile_image_url: string | null;
-  };
+  } | null;
 }
 
 const LiveStreams = () => {
@@ -56,54 +56,39 @@ const LiveStreams = () => {
   }, [navigate]);
 
   const loadStreams = async () => {
-    const { data, error } = await supabase
+    // First try to get streams without join
+    const { data: streamsData, error: streamsError } = await supabase
       .from('live_streams')
-      .select(`
-        *,
-        profiles!live_streams_streamer_id_fkey (
-          first_name,
-          profile_image_url
-        )
-      `)
+      .select('*')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.log('Error loading streams:', error);
-      // Fallback query without the join if the foreign key doesn't exist yet
-      const { data: streamsData, error: streamsError } = await supabase
-        .from('live_streams')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-
-      if (streamsError) {
-        toast({
-          title: "Error loading streams",
-          description: streamsError.message,
-          variant: "destructive"
-        });
-      } else {
-        // Manually get profiles for each stream
-        const streamsWithProfiles = await Promise.all(
-          (streamsData || []).map(async (stream) => {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('first_name, profile_image_url')
-              .eq('user_id', stream.streamer_id)
-              .single();
-            
-            return {
-              ...stream,
-              profiles: profile
-            };
-          })
-        );
-        setStreams(streamsWithProfiles);
-      }
-    } else {
-      setStreams(data || []);
+    if (streamsError) {
+      toast({
+        title: "Error loading streams",
+        description: streamsError.message,
+        variant: "destructive"
+      });
+      return;
     }
+
+    // Then manually get profiles for each stream
+    const streamsWithProfiles = await Promise.all(
+      (streamsData || []).map(async (stream) => {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('first_name, profile_image_url')
+          .eq('user_id', stream.streamer_id)
+          .single();
+        
+        return {
+          ...stream,
+          profiles: profileError ? null : profile
+        };
+      })
+    );
+
+    setStreams(streamsWithProfiles);
   };
 
   const createStream = async () => {
