@@ -28,6 +28,10 @@ serve(async (req) => {
       throw new Error("Stripe secret key not configured");
     }
 
+    // Log the type of key being used (without exposing the actual key)
+    const keyType = stripeSecretKey.startsWith('sk_live_') ? 'live' : stripeSecretKey.startsWith('sk_test_') ? 'test' : 'unknown';
+    logStep("Stripe key type detected", { keyType });
+
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
@@ -109,9 +113,24 @@ serve(async (req) => {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
     logStep("ERROR in create-checkout", { message: errorMessage, stack: error instanceof Error ? error.stack : undefined });
     
+    // Provide more specific error messages for common Stripe issues
+    let userFriendlyMessage = errorMessage;
+    let details = "Please try again or contact support if the issue persists.";
+    
+    if (errorMessage.includes("cannot currently make live charges")) {
+      userFriendlyMessage = "Payment processing is not available";
+      details = "Your Stripe account needs to be activated for live payments. Please complete your Stripe account setup and verification process.";
+    } else if (errorMessage.includes("No such price")) {
+      userFriendlyMessage = "Pricing configuration error";
+      details = "The payment pricing is not properly configured. Please contact support.";
+    } else if (errorMessage.includes("Stripe secret key")) {
+      userFriendlyMessage = "Payment system configuration error";
+      details = "The payment system is not properly configured. Please contact support.";
+    }
+    
     return new Response(JSON.stringify({ 
-      error: errorMessage,
-      details: "Please check that your Stripe secret key is properly configured in Supabase Edge Function secrets"
+      error: userFriendlyMessage,
+      details: details
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
