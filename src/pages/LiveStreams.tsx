@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
@@ -243,59 +242,66 @@ const LiveStreams = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50">
-      <nav className="bg-white/80 backdrop-blur-lg border-b border-pink-100 p-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
+      <nav className="bg-white/80 backdrop-blur-lg border-b border-pink-100 p-4 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
           <Button
             variant="ghost"
             onClick={() => navigate('/dashboard')}
-            className="text-pink-600 hover:bg-pink-50"
+            className="text-pink-600 hover:bg-pink-50 transition-all duration-200 self-start sm:self-center"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Dashboard
+            <span className="hidden sm:inline">Back to Dashboard</span>
+            <span className="sm:hidden">Back</span>
           </Button>
+          
           <div className="flex items-center space-x-2">
             <div className="bg-gradient-to-r from-pink-500 to-purple-600 p-2 rounded-lg">
               <Video className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
               Live Streams
             </span>
           </div>
+          
           <div className="flex space-x-2">
             {myActiveStream ? (
               <Button
                 onClick={() => endStream(myActiveStream.id)}
                 variant="destructive"
-                className="bg-red-500 hover:bg-red-600"
+                className="bg-red-500 hover:bg-red-600 transition-all duration-200"
               >
                 <StopCircle className="w-4 h-4 mr-2" />
-                End Stream
+                <span className="hidden sm:inline">End Stream</span>
+                <span className="sm:hidden">End</span>
               </Button>
             ) : (
               <Button
                 onClick={() => setIsCreating(!isCreating)}
-                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white"
+                className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white transition-all duration-200 transform hover:scale-105"
                 disabled={!canGoLive()}
               >
                 <Video className="w-4 h-4 mr-2" />
-                Go Live
+                <span className="hidden sm:inline">Go Live</span>
+                <span className="sm:hidden">Live</span>
               </Button>
             )}
           </div>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6">
         {!isPremium && (
-          <Card className="mb-6 border-yellow-200 bg-yellow-50">
+          <Card className="mb-6 border-yellow-200 bg-gradient-to-r from-yellow-50 to-orange-50 shadow-sm">
             <CardContent className="p-4">
-              <div className="flex items-center space-x-2 text-yellow-800">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 text-yellow-800">
                 <Crown className="w-5 h-5" />
-                <p className="font-medium">Premium Required for Live Streaming</p>
+                <div>
+                  <p className="font-medium">Premium Required for Live Streaming</p>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    Upgrade to Premium to start your own live streams and access premium-only content.
+                  </p>
+                </div>
               </div>
-              <p className="text-sm text-yellow-700 mt-1">
-                Upgrade to Premium to start your own live streams and access premium-only content.
-              </p>
             </CardContent>
           </Card>
         )}
@@ -382,16 +388,18 @@ const LiveStreams = () => {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {streams.length === 0 ? (
             <div className="col-span-full text-center py-12">
-              <Video className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+              <div className="w-20 h-20 bg-gradient-to-r from-pink-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Video className="w-10 h-10 text-pink-500" />
+              </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">No live streams</h3>
               <p className="text-gray-600 mb-4">Be the first to go live!</p>
               {canGoLive() && (
                 <Button
                   onClick={() => setIsCreating(true)}
-                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white"
+                  className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white transition-all duration-200 transform hover:scale-105"
                 >
                   Start Streaming
                 </Button>
@@ -399,7 +407,7 @@ const LiveStreams = () => {
             </div>
           ) : (
             streams.map((stream) => (
-              <Card key={stream.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <Card key={stream.id} className="overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02]">
                 <div className="relative aspect-video bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center">
                   <Play className="w-12 h-12 text-white" />
                   <div className="absolute top-2 right-2">
