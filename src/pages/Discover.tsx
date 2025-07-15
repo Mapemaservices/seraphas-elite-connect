@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, ArrowLeft, X, MapPin, Calendar } from 'lucide-react';
+import { Heart, ArrowLeft, X, MapPin, Calendar, MessageCircle } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 interface Profile {
   id: string;
@@ -24,9 +25,11 @@ interface Profile {
 const Discover = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isPremium } = useSubscription();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [existingMatches, setExistingMatches] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const getProfiles = async () => {
@@ -36,10 +39,21 @@ const Discover = () => {
         return;
       }
 
+      // Get existing matches to avoid duplicates
+      const { data: matchesData } = await supabase
+        .from('matches')
+        .select('matched_user_id')
+        .eq('user_id', session.user.id);
+
+      const matchedUserIds = new Set(matchesData?.map(match => match.matched_user_id) || []);
+      setExistingMatches(matchedUserIds);
+
+      // Get profiles excluding already matched users
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .neq('user_id', session.user.id)
+        .not('user_id', 'in', `(${Array.from(matchedUserIds).join(',') || 'null'})`)
         .limit(10);
 
       if (error) {
@@ -65,6 +79,17 @@ const Discover = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
 
+    // Check if match already exists
+    if (existingMatches.has(currentProfile.user_id)) {
+      toast({
+        title: "Already liked",
+        description: "You've already liked this person!",
+        variant: "destructive"
+      });
+      nextProfile();
+      return;
+    }
+
     const { error } = await supabase
       .from('matches')
       .insert({
@@ -74,18 +99,69 @@ const Discover = () => {
       });
 
     if (error) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      });
+      console.error('Match error:', error);
+      if (error.code === '23505') {
+        toast({
+          title: "Already liked",
+          description: "You've already liked this person!",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
     } else {
+      // Add to existing matches to prevent future duplicates
+      setExistingMatches(prev => new Set([...prev, currentProfile.user_id]));
+      
       toast({
         title: "Match sent!",
         description: "We'll let you know if they're interested too.",
       });
-      nextProfile();
     }
+    nextProfile();
+  };
+
+  const handleMessage = async () => {
+    const currentProfile = profiles[currentIndex];
+    if (!currentProfile) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return;
+
+    // Check if user can message (premium users can message anyone)
+    if (!isPremium && !currentProfile.is_premium) {
+      toast({
+        title: "Premium Required",
+        description: "Upgrade to Premium to message other users, or wait for a Premium member to message you first.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // First, create a match if it doesn't exist
+    const { error: matchError } = await supabase
+      .from('matches')
+      .insert({
+        user_id: session.user.id,
+        matched_user_id: currentProfile.user_id,
+        status: 'pending'
+      });
+
+    if (matchError && matchError.code !== '23505') {
+      toast({
+        title: "Error",
+        description: "Failed to create connection",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Navigate to messages
+    navigate('/messages');
   };
 
   const handlePass = () => {
@@ -158,6 +234,11 @@ const Discover = () => {
                   {currentProfile.age && (
                     <span className="text-lg font-normal ml-2">{currentProfile.age}</span>
                   )}
+                  {currentProfile.is_premium && (
+                    <span className="ml-2 px-2 py-1 bg-yellow-500 text-black text-xs rounded-full font-medium">
+                      Premium
+                    </span>
+                  )}
                 </h2>
                 {currentProfile.location && (
                   <p className="flex items-center text-sm opacity-90">
@@ -186,7 +267,7 @@ const Discover = () => {
                 </div>
               )}
 
-              <div className="flex justify-center space-x-4">
+              <div className="flex justify-center space-x-2">
                 <Button
                   size="lg"
                   variant="outline"
@@ -204,7 +285,25 @@ const Discover = () => {
                   <Heart className="w-5 h-5 mr-2" />
                   Like
                 </Button>
+                {(isPremium || currentProfile.is_premium) && (
+                  <Button
+                    size="lg"
+                    onClick={handleMessage}
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white"
+                  >
+                    <MessageCircle className="w-5 h-5 mr-2" />
+                    Message
+                  </Button>
+                )}
               </div>
+              
+              {!isPremium && !currentProfile.is_premium && (
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800 text-center">
+                    Upgrade to Premium to message anyone directly!
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         ) : (
