@@ -18,38 +18,64 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabaseClient = createClient(
-    Deno.env.get("SUPABASE_URL") ?? "",
-    Deno.env.get("SUPABASE_ANON_KEY") ?? ""
-  );
-
   try {
     logStep("Function started");
 
+    // Check if Stripe secret key exists
+    const stripeSecretKey = Deno.env.get("stripe_secret_key");
+    if (!stripeSecretKey) {
+      logStep("ERROR: Stripe secret key not found");
+      throw new Error("Stripe secret key not configured");
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+    );
+
     const { priceType } = await req.json();
+    logStep("Request received", { priceType });
     
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      logStep("ERROR: No authorization header");
+      throw new Error("No authorization header provided");
+    }
+
     const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
+    const { data, error: userError } = await supabaseClient.auth.getUser(token);
+    
+    if (userError) {
+      logStep("ERROR: User authentication failed", { error: userError.message });
+      throw new Error(`Authentication error: ${userError.message}`);
+    }
+
     const user = data.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user?.email) {
+      logStep("ERROR: User not authenticated or email not available");
+      throw new Error("User not authenticated or email not available");
+    }
 
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const stripe = new Stripe(Deno.env.get("stripe_secret_key") || "", { 
+    const stripe = new Stripe(stripeSecretKey, { 
       apiVersion: "2023-10-16" 
     });
 
+    // Check for existing customer
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     let customerId;
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
+      logStep("Found existing customer", { customerId });
+    } else {
+      logStep("No existing customer found");
     }
-
-    logStep("Creating checkout session", { priceType, customerId });
 
     const unitAmount = priceType === 'yearly' ? 9900 : 999; // $99.00 yearly, $9.99 monthly
     const interval = priceType === 'yearly' ? 'year' : 'month';
+
+    logStep("Creating checkout session", { priceType, unitAmount, interval, customerId });
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -73,15 +99,20 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/dashboard?canceled=true`,
     });
 
-    logStep("Checkout session created", { sessionId: session.id });
+    logStep("Checkout session created successfully", { sessionId: session.id, url: session.url });
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
-    logStep("ERROR", { message: error.message });
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    logStep("ERROR in create-checkout", { message: errorMessage, stack: error instanceof Error ? error.stack : undefined });
+    
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      details: "Please check that your Stripe secret key is properly configured in Supabase Edge Function secrets"
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
