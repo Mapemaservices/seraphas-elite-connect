@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Heart, ArrowLeft, Send, MessageCircle } from 'lucide-react';
+import { Heart, ArrowLeft, Send, MessageCircle, Crown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 interface Message {
   id: string;
@@ -22,6 +23,7 @@ interface Chat {
   user_id: string;
   first_name: string | null;
   profile_image_url: string | null;
+  is_premium: boolean | null;
   lastMessage: string;
   lastMessageTime: string;
   unreadCount: number;
@@ -30,8 +32,10 @@ interface Chat {
 const Messages = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isPremium } = useSubscription();
   const [chats, setChats] = useState<Chat[]>([]);
   const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [selectedChatProfile, setSelectedChatProfile] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [currentUserId, setCurrentUserId] = useState<string>('');
@@ -96,7 +100,7 @@ const Messages = () => {
     if (partnerIds.length > 0) {
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('user_id, first_name, profile_image_url')
+        .select('user_id, first_name, profile_image_url, is_premium')
         .in('user_id', partnerIds);
 
       const chatsArray = Array.from(chatMap.entries()).map(([partnerId, chatData]) => {
@@ -107,6 +111,7 @@ const Messages = () => {
           user_id: partnerId,
           first_name: profile?.first_name || 'Unknown',
           profile_image_url: profile?.profile_image_url,
+          is_premium: profile?.is_premium || false,
           lastMessage: lastMessage?.content || '',
           lastMessageTime: lastMessage?.created_at || '',
           unreadCount: chatData.unreadCount
@@ -142,8 +147,23 @@ const Messages = () => {
     }
   };
 
+  const canSendMessage = () => {
+    if (isPremium) return true; // Premium users can message anyone
+    if (selectedChatProfile?.is_premium) return true; // Can message premium users
+    return false; // Free users can't message other free users
+  };
+
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedChat) return;
+
+    if (!canSendMessage()) {
+      toast({
+        title: "Premium Required",
+        description: "Upgrade to Premium to message other users, or wait for a Premium member to message you first.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     const { error } = await supabase
       .from('messages')
@@ -168,6 +188,8 @@ const Messages = () => {
 
   const selectChat = (partnerId: string) => {
     setSelectedChat(partnerId);
+    const chatProfile = chats.find(chat => chat.user_id === partnerId);
+    setSelectedChatProfile(chatProfile || null);
     loadMessages(partnerId);
   };
 
@@ -237,9 +259,14 @@ const Messages = () => {
                           <AvatarFallback>{chat.first_name?.[0] || "?"}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">
-                            {chat.first_name}
-                          </p>
+                          <div className="flex items-center space-x-2">
+                            <p className="font-medium text-gray-900 truncate">
+                              {chat.first_name}
+                            </p>
+                            {chat.is_premium && (
+                              <Crown className="w-4 h-4 text-yellow-500" />
+                            )}
+                          </div>
                           <p className="text-sm text-gray-500 truncate">
                             {chat.lastMessage}
                           </p>
@@ -289,16 +316,26 @@ const Messages = () => {
                   </div>
                 </CardContent>
                 <div className="p-4 border-t">
+                  {!canSendMessage() && (
+                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800">
+                        <Crown className="w-4 h-4 inline mr-1" />
+                        Upgrade to Premium to message other users freely!
+                      </p>
+                    </div>
+                  )}
                   <div className="flex space-x-2">
                     <Input
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Type a message..."
+                      placeholder={canSendMessage() ? "Type a message..." : "Premium required to send messages"}
                       onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                      disabled={!canSendMessage()}
                     />
                     <Button
                       onClick={sendMessage}
-                      className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white"
+                      disabled={!canSendMessage()}
+                      className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white disabled:opacity-50"
                     >
                       <Send className="w-4 h-4" />
                     </Button>

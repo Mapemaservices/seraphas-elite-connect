@@ -4,9 +4,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Check, Crown, Heart, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useSubscription } from "@/contexts/SubscriptionContext";
 
 const Pricing = () => {
   const navigate = useNavigate();
+  const { createCheckout, isPremium } = useSubscription();
 
   return (
     <section id="pricing" className="py-24 bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50">
@@ -54,6 +56,10 @@ const Pricing = () => {
                   <Check className="w-5 h-5 text-green-500" />
                   <span className="text-gray-700">Basic matching</span>
                 </div>
+                <div className="flex items-center space-x-3">
+                  <Check className="w-5 h-5 text-green-500" />
+                  <span className="text-gray-700">Receive messages from Premium users</span>
+                </div>
               </div>
               <Button 
                 variant="outline" 
@@ -65,62 +71,90 @@ const Pricing = () => {
             </CardContent>
           </Card>
 
-          {/* Premium Plan */}
-          <Card className="border-pink-200 relative bg-gradient-to-br from-pink-50 to-purple-50">
-            <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-              <Badge className="bg-gradient-to-r from-pink-500 to-purple-600 text-white border-0 px-4 py-1">
-                <Star className="w-4 h-4 mr-1" />
-                Most Popular
-              </Badge>
-            </div>
-            <CardHeader className="text-center pb-8 pt-8">
-              <div className="mx-auto mb-4 p-3 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full w-fit">
-                <Crown className="w-6 h-6 text-white" />
+          {/* Premium Plans */}
+          <div className="space-y-4">
+            {/* Monthly Plan */}
+            <Card className="border-pink-200 relative bg-gradient-to-br from-pink-50 to-purple-50">
+              <CardHeader className="text-center pb-4">
+                <div className="mx-auto mb-4 p-3 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full w-fit">
+                  <Crown className="w-6 h-6 text-white" />
+                </div>
+                <CardTitle className="text-xl font-bold text-gray-900">Premium Monthly</CardTitle>
+                <div className="mt-2">
+                  <span className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">$9.99</span>
+                  <span className="text-gray-600">/month</span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700">Unlimited messaging</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700">Watch live streams</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700">Advanced filters</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700">Priority support</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700">Go live (females only)</span>
+                  </div>
+                </div>
+                <Button 
+                  className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-0"
+                  onClick={() => createCheckout('monthly')}
+                  disabled={isPremium}
+                >
+                  {isPremium ? 'Already Premium' : 'Choose Monthly'}
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Yearly Plan */}
+            <Card className="border-pink-200 relative bg-gradient-to-br from-pink-50 to-purple-50">
+              <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                <Badge className="bg-gradient-to-r from-pink-500 to-purple-600 text-white border-0 px-3 py-1">
+                  <Star className="w-3 h-3 mr-1" />
+                  Best Value
+                </Badge>
               </div>
-              <CardTitle className="text-2xl font-bold text-gray-900">Premium</CardTitle>
-              <CardDescription className="text-gray-600">
-                Unlock all premium features
-              </CardDescription>
-              <div className="mt-4">
-                <span className="text-4xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">$10</span>
-                <span className="text-gray-600">/month</span>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <Check className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-700">Everything in Free</span>
+              <CardHeader className="text-center pb-4 pt-6">
+                <CardTitle className="text-xl font-bold text-gray-900">Premium Yearly</CardTitle>
+                <div className="mt-2">
+                  <span className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">$99</span>
+                  <span className="text-gray-600">/year</span>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <Check className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-700">Unlimited messaging</span>
+                <p className="text-sm text-green-600 font-medium">Save $20.88 per year!</p>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700">Everything in Monthly</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Check className="w-4 h-4 text-green-500" />
+                    <span className="text-gray-700">2 months free</span>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <Check className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-700">Watch live streams</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Check className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-700">Advanced filters</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Check className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-700">Priority support</span>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <Check className="w-5 h-5 text-green-500" />
-                  <span className="text-gray-700">Go live (females only)</span>
-                </div>
-              </div>
-              <Button 
-                className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-0"
-                onClick={() => navigate('/signup')}
-              >
-                Start Premium Trial
-              </Button>
-            </CardContent>
-          </Card>
+                <Button 
+                  className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-0"
+                  onClick={() => createCheckout('yearly')}
+                  disabled={isPremium}
+                >
+                  {isPremium ? 'Already Premium' : 'Choose Yearly'}
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
         
         <div className="text-center mt-12">

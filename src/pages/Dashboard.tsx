@@ -1,19 +1,38 @@
-
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Heart, LogOut, User as UserIcon, Settings, MessageCircle, Video } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubscription } from "@/contexts/SubscriptionContext";
 import type { User } from '@supabase/supabase-js';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [searchParams] = useSearchParams();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { isPremium, checkSubscription, createCheckout, manageBilling } = useSubscription();
+
+  useEffect(() => {
+    // Check for success/canceled params from Stripe
+    if (searchParams.get('success')) {
+      toast({
+        title: "Payment successful!",
+        description: "Welcome to Seraphas Premium! Your subscription is now active.",
+      });
+      checkSubscription(); // Refresh subscription status
+    } else if (searchParams.get('canceled')) {
+      toast({
+        title: "Payment canceled",
+        description: "Your subscription was not activated.",
+        variant: "destructive"
+      });
+    }
+  }, [searchParams, toast, checkSubscription]);
 
   useEffect(() => {
     // Get initial session
@@ -83,9 +102,11 @@ const Dashboard = () => {
             <span className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
               Seraphas
             </span>
-            <Badge className="bg-gradient-to-r from-pink-500 to-purple-600 text-white border-0">
-              Premium
-            </Badge>
+            {isPremium && (
+              <Badge className="bg-gradient-to-r from-pink-500 to-purple-600 text-white border-0">
+                Premium
+              </Badge>
+            )}
           </div>
           
           <div className="flex items-center space-x-4">
@@ -198,16 +219,53 @@ const Dashboard = () => {
           <CardContent>
             <div className="flex justify-between items-center">
               <div>
-                <p className="text-sm text-gray-600 mb-2">
-                  Upgrade to Premium to unlock all features
-                </p>
-                <Badge variant="outline" className="text-gray-600">
-                  Free Account
-                </Badge>
+                {isPremium ? (
+                  <>
+                    <p className="text-sm text-gray-600 mb-2">
+                      You have access to all premium features
+                    </p>
+                    <Badge className="bg-gradient-to-r from-pink-500 to-purple-600 text-white border-0">
+                      Premium Member
+                    </Badge>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-600 mb-2">
+                      Upgrade to Premium to unlock all features
+                    </p>
+                    <Badge variant="outline" className="text-gray-600">
+                      Free Account
+                    </Badge>
+                  </>
+                )}
               </div>
-              <Button className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white">
-                Upgrade to Premium
-              </Button>
+              <div className="flex space-x-2">
+                {isPremium ? (
+                  <Button 
+                    onClick={manageBilling}
+                    variant="outline"
+                    className="border-pink-200 text-pink-600 hover:bg-pink-50"
+                  >
+                    Manage Billing
+                  </Button>
+                ) : (
+                  <>
+                    <Button 
+                      onClick={() => createCheckout('monthly')}
+                      variant="outline"
+                      className="border-pink-200 text-pink-600 hover:bg-pink-50"
+                    >
+                      Monthly ($9.99)
+                    </Button>
+                    <Button 
+                      onClick={() => createCheckout('yearly')}
+                      className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white"
+                    >
+                      Yearly ($99)
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
