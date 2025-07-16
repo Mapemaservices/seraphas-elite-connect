@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +23,7 @@ interface LiveStream {
     first_name: string | null;
     profile_image_url: string | null;
     is_premium: boolean | null;
-  };
+  } | null;
 }
 
 const LiveStreams = () => {
@@ -49,7 +48,7 @@ const LiveStreams = () => {
         .from('live_streams')
         .select(`
           *,
-          profiles:streamer_id (
+          profiles!live_streams_streamer_id_fkey (
             first_name,
             profile_image_url,
             is_premium
@@ -58,8 +57,20 @@ const LiveStreams = () => {
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setStreams(data || []);
+      if (error) {
+        console.error('Error loading streams:', error);
+        // Fallback: load streams without profile data
+        const { data: streamsOnly, error: streamsError } = await supabase
+          .from('live_streams')
+          .select('*')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false });
+
+        if (streamsError) throw streamsError;
+        setStreams(streamsOnly || []);
+      } else {
+        setStreams(data || []);
+      }
     } catch (error) {
       toast({
         title: "Error loading streams",
@@ -280,7 +291,7 @@ const LiveStreams = () => {
               {/* Viewer Count */}
               <div className="absolute bottom-3 right-3 bg-black/50 text-white px-2 py-1 rounded text-sm">
                 <Eye className="w-3 h-3 inline mr-1" />
-                {stream.viewer_count}
+                {stream.viewer_count || 0}
               </div>
             </div>
 
