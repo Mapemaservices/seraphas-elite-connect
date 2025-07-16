@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { Navigation } from "@/components/layout/Navigation";
 import { Heart } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 import type { User } from '@supabase/supabase-js';
 
 interface AuthGuardProps {
@@ -13,6 +14,7 @@ interface AuthGuardProps {
 
 export const AuthGuard = ({ children }: AuthGuardProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { isPremium } = useSubscription();
@@ -20,29 +22,60 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
   useEffect(() => {
     // Get initial session
     const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setUser(session.user);
-      } else {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        console.log('AuthGuard - Getting session:', { session, error });
+        
+        if (error) {
+          console.error('AuthGuard - Session error:', error);
+          toast({
+            title: "Authentication Error",
+            description: "There was an issue with your session. Please try logging in again.",
+            variant: "destructive"
+          });
+          navigate('/login');
+          return;
+        }
+        
+        if (session?.user) {
+          console.log('AuthGuard - User found:', session.user);
+          setUser(session.user);
+        } else {
+          console.log('AuthGuard - No user, redirecting to login');
+          navigate('/login');
+        }
+      } catch (error) {
+        console.error('AuthGuard - Unexpected error:', error);
+        toast({
+          title: "Authentication Error",
+          description: "An unexpected error occurred. Please try logging in again.",
+          variant: "destructive"
+        });
         navigate('/login');
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     };
 
     getSession();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('AuthGuard - Auth state changed:', event, session);
+      
       if (event === 'SIGNED_OUT' || !session) {
+        console.log('AuthGuard - User signed out or no session');
         setUser(null);
         navigate('/login');
       } else if (session?.user) {
+        console.log('AuthGuard - User signed in:', session.user);
         setUser(session.user);
       }
+      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   if (isLoading) {
     return (
@@ -56,7 +89,7 @@ export const AuthGuard = ({ children }: AuthGuardProps) => {
   }
 
   if (!user) {
-    return null;
+    return null; // Will redirect to login
   }
 
   return (

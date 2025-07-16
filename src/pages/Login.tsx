@@ -23,9 +23,16 @@ const Login = () => {
   useEffect(() => {
     // Check if user is already logged in
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate('/dashboard');
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Login - Current session check:', session);
+        
+        if (session?.user) {
+          console.log('Login - User already logged in, redirecting to dashboard');
+          navigate('/dashboard');
+        }
+      } catch (error) {
+        console.error('Login - Auth check error:', error);
       }
     };
     
@@ -33,19 +40,28 @@ const Login = () => {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
+      console.log('Login - Auth state changed:', event, session);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('Login - User signed in successfully, redirecting to dashboard');
+        toast({
+          title: "Welcome back!",
+          description: "You have successfully signed in.",
+        });
         navigate('/dashboard');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      console.log('Login - Attempting login with email:', formData.email);
+      
       if (!formData.email || !formData.password) {
         throw new Error('Please fill in all fields');
       }
@@ -55,18 +71,19 @@ const Login = () => {
         password: formData.password,
       });
 
+      console.log('Login - Sign in response:', { data, error });
+
       if (error) {
+        console.error('Login - Sign in error:', error);
         throw error;
       }
 
       if (data.user) {
-        toast({
-          title: "Welcome back!",
-          description: "You have successfully signed in.",
-        });
+        console.log('Login - Sign in successful:', data.user);
         // Navigation will be handled by the auth state change listener
       }
     } catch (error) {
+      console.error('Login - Error during sign in:', error);
       toast({
         title: "Login failed",
         description: error instanceof Error ? error.message : "Please check your credentials and try again.",

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,11 +28,44 @@ const Signup = () => {
     bio: ''
   });
 
+  useEffect(() => {
+    // Check if user is already logged in
+    const checkAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        console.log('Signup - Current session check:', session);
+        
+        if (session?.user) {
+          console.log('Signup - User already logged in, redirecting to dashboard');
+          navigate('/dashboard');
+        }
+      } catch (error) {
+        console.error('Signup - Auth check error:', error);
+      }
+    };
+    
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Signup - Auth state changed:', event, session);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        console.log('Signup - User signed in after registration, redirecting to dashboard');
+        navigate('/dashboard');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
+      console.log('Signup - Attempting registration with email:', formData.email);
+      
       if (formData.password !== formData.confirmPassword) {
         throw new Error('Passwords do not match');
       }
@@ -62,20 +95,34 @@ const Signup = () => {
         }
       });
 
+      console.log('Signup - Registration response:', { data, error });
+
       if (error) {
+        console.error('Signup - Registration error:', error);
         throw error;
       }
 
       if (data.user) {
-        toast({
-          title: "Welcome to Seraphas!",
-          description: "Please check your email to verify your account.",
-        });
+        console.log('Signup - Registration successful:', data.user);
         
-        // Redirect to login page
-        navigate('/login');
+        if (data.user.email_confirmed_at) {
+          // Email is already confirmed, user can log in immediately
+          toast({
+            title: "Welcome to Seraphas!",
+            description: "Your account has been created successfully.",
+          });
+          navigate('/dashboard');
+        } else {
+          // Email confirmation required
+          toast({
+            title: "Welcome to Seraphas!",
+            description: "Please check your email to verify your account.",
+          });
+          navigate('/login');
+        }
       }
     } catch (error) {
+      console.error('Signup - Error during registration:', error);
       toast({
         title: "Registration failed",
         description: error instanceof Error ? error.message : "Please check your information and try again.",
