@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Play, Stop, Settings } from 'lucide-react';
+import { Play, Square, Settings } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -138,7 +137,7 @@ export const StreamControls = ({
             variant="destructive"
             className="w-full"
           >
-            <Stop className="w-4 h-4 mr-2" />
+            <Square className="w-4 h-4 mr-2" />
             {isEnding ? 'Ending...' : 'End Stream'}
           </Button>
         </CardContent>
