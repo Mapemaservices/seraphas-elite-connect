@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,7 +20,7 @@ interface LiveStream {
   is_premium_only: boolean;
   viewer_count: number;
   created_at: string;
-  profiles?: {
+  streamer_profile?: {
     first_name: string | null;
     profile_image_url: string | null;
     is_premium: boolean | null;
@@ -44,34 +45,51 @@ const LiveStreams = () => {
 
   const loadStreams = async () => {
     try {
-      const { data, error } = await supabase
+      // First, get all active streams
+      const { data: streamsData, error: streamsError } = await supabase
         .from('live_streams')
-        .select(`
-          *,
-          profiles!live_streams_streamer_id_fkey (
-            first_name,
-            profile_image_url,
-            is_premium
-          )
-        `)
+        .select('*')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error loading streams:', error);
-        // Fallback: load streams without profile data
-        const { data: streamsOnly, error: streamsError } = await supabase
-          .from('live_streams')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false });
+      if (streamsError) throw streamsError;
 
-        if (streamsError) throw streamsError;
-        setStreams(streamsOnly || []);
-      } else {
-        setStreams(data || []);
+      if (!streamsData || streamsData.length === 0) {
+        setStreams([]);
+        return;
       }
+
+      // Get unique streamer IDs
+      const streamerIds = [...new Set(streamsData.map(stream => stream.streamer_id))];
+
+      // Fetch profiles for all streamers
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, first_name, profile_image_url, is_premium')
+        .in('user_id', streamerIds);
+
+      if (profilesError) {
+        console.error('Error loading profiles:', profilesError);
+        // Set streams without profile data
+        setStreams(streamsData.map(stream => ({ ...stream, streamer_profile: null })));
+        return;
+      }
+
+      // Create a map of user_id to profile
+      const profilesMap = new Map();
+      profilesData?.forEach(profile => {
+        profilesMap.set(profile.user_id, profile);
+      });
+
+      // Combine streams with their profile data
+      const streamsWithProfiles = streamsData.map(stream => ({
+        ...stream,
+        streamer_profile: profilesMap.get(stream.streamer_id) || null
+      }));
+
+      setStreams(streamsWithProfiles);
     } catch (error) {
+      console.error('Error loading streams:', error);
       toast({
         title: "Error loading streams",
         description: error instanceof Error ? error.message : "Failed to load live streams",
@@ -298,16 +316,16 @@ const LiveStreams = () => {
             <CardContent className="p-4">
               <div className="flex items-start space-x-3 mb-3">
                 <Avatar className="w-10 h-10">
-                  <AvatarImage src={stream.profiles?.profile_image_url || ""} />
+                  <AvatarImage src={stream.streamer_profile?.profile_image_url || ""} />
                   <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                    {stream.profiles?.first_name?.[0] || "?"}
+                    {stream.streamer_profile?.first_name?.[0] || "?"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-semibold text-gray-900 truncate">{stream.title}</h3>
                   <div className="flex items-center space-x-1 text-sm text-gray-600">
-                    <span>{stream.profiles?.first_name || 'Anonymous'}</span>
-                    {stream.profiles?.is_premium && (
+                    <span>{stream.streamer_profile?.first_name || 'Anonymous'}</span>
+                    {stream.streamer_profile?.is_premium && (
                       <Crown className="w-3 h-3 text-yellow-500" />
                     )}
                   </div>
