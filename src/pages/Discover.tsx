@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Heart } from 'lucide-react';
@@ -24,22 +25,29 @@ const Discover = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
   const [existingMatches, setExistingMatches] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    getProfiles();
+    initializeDiscover();
   }, []);
 
-  const getProfiles = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) return;
+  const initializeDiscover = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      setCurrentUserId(session.user.id);
+      await getProfiles(session.user.id);
+    }
+    setIsLoading(false);
+  };
 
+  const getProfiles = async (userId: string) => {
+    try {
       // Get existing matches to avoid duplicates
       const { data: matchesData } = await supabase
         .from('matches')
         .select('matched_user_id')
-        .eq('user_id', session.user.id);
+        .eq('user_id', userId);
 
       const matchedUserIds = new Set(matchesData?.map(match => match.matched_user_id) || []);
       setExistingMatches(matchedUserIds);
@@ -48,7 +56,7 @@ const Discover = () => {
       let query = supabase
         .from('profiles')
         .select('*')
-        .neq('user_id', session.user.id)
+        .neq('user_id', userId)
         .limit(10);
 
       if (matchedUserIds.size > 0) {
@@ -65,17 +73,12 @@ const Discover = () => {
         description: error instanceof Error ? error.message : "Failed to load profiles",
         variant: "destructive"
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const handleLike = async () => {
     const currentProfile = profiles[currentIndex];
     if (!currentProfile) return;
-
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
 
     if (existingMatches.has(currentProfile.user_id)) {
       toast({
@@ -90,7 +93,7 @@ const Discover = () => {
     const { error } = await supabase
       .from('matches')
       .insert({
-        user_id: session.user.id,
+        user_id: currentUserId,
         matched_user_id: currentProfile.user_id,
         status: 'pending'
       });
@@ -124,9 +127,6 @@ const Discover = () => {
     const currentProfile = profiles[currentIndex];
     if (!currentProfile) return;
 
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.user) return;
-
     if (!isPremium && !currentProfile.is_premium) {
       toast({
         title: "Premium Required",
@@ -136,26 +136,22 @@ const Discover = () => {
       return;
     }
 
+    // Create a match/connection if one doesn't exist
     const { error: matchError } = await supabase
       .from('matches')
       .insert({
-        user_id: session.user.id,
+        user_id: currentUserId,
         matched_user_id: currentProfile.user_id,
         status: 'pending'
       });
 
     if (matchError && matchError.code !== '23505') {
-      toast({
-        title: "Error",
-        description: "Failed to create connection",
-        variant: "destructive"
-      });
-      return;
+      console.error('Match error:', matchError);
     }
 
     toast({
       title: "Connection created!",
-      description: "You can now message this person. Check your messages.",
+      description: "You can now message this person.",
     });
   };
 
@@ -193,6 +189,7 @@ const Discover = () => {
         <ProfileCard
           profile={currentProfile}
           isPremium={isPremium}
+          currentUserId={currentUserId}
           onLike={handleLike}
           onPass={handlePass}
           onMessage={handleMessage}
