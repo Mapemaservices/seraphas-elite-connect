@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Heart, ArrowLeft } from 'lucide-react';
+import { Heart } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -21,7 +19,6 @@ interface Profile {
 }
 
 const Discover = () => {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const { isPremium } = useSubscription();
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -30,12 +27,13 @@ const Discover = () => {
   const [existingMatches, setExistingMatches] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    const getProfiles = async () => {
+    getProfiles();
+  }, []);
+
+  const getProfiles = async () => {
+    try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        navigate('/login');
-        return;
-      }
+      if (!session?.user) return;
 
       // Get existing matches to avoid duplicates
       const { data: matchesData } = await supabase
@@ -46,29 +44,31 @@ const Discover = () => {
       const matchedUserIds = new Set(matchesData?.map(match => match.matched_user_id) || []);
       setExistingMatches(matchedUserIds);
 
-      // Get profiles excluding already matched users
-      const { data, error } = await supabase
+      // Get profiles excluding already matched users and current user
+      let query = supabase
         .from('profiles')
         .select('*')
         .neq('user_id', session.user.id)
-        .not('user_id', 'in', `(${Array.from(matchedUserIds).join(',') || 'null'})`)
         .limit(10);
 
-      if (error) {
-        toast({
-          title: "Error loading profiles",
-          description: error.message,
-          variant: "destructive"
-        });
-      } else {
-        setProfiles(data || []);
+      if (matchedUserIds.size > 0) {
+        query = query.not('user_id', 'in', `(${Array.from(matchedUserIds).join(',')})`);
       }
 
-      setIsLoading(false);
-    };
+      const { data, error } = await query;
 
-    getProfiles();
-  }, [navigate, toast]);
+      if (error) throw error;
+      setProfiles(data || []);
+    } catch (error) {
+      toast({
+        title: "Error loading profiles",
+        description: error instanceof Error ? error.message : "Failed to load profiles",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLike = async () => {
     const currentProfile = profiles[currentIndex];
@@ -77,7 +77,6 @@ const Discover = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
 
-    // Check if match already exists
     if (existingMatches.has(currentProfile.user_id)) {
       toast({
         title: "Already liked",
@@ -112,9 +111,7 @@ const Discover = () => {
         });
       }
     } else {
-      // Add to existing matches to prevent future duplicates
       setExistingMatches(prev => new Set([...prev, currentProfile.user_id]));
-      
       toast({
         title: "Match sent!",
         description: "We'll let you know if they're interested too.",
@@ -130,7 +127,6 @@ const Discover = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.user) return;
 
-    // Check if user can message (premium users can message anyone)
     if (!isPremium && !currentProfile.is_premium) {
       toast({
         title: "Premium Required",
@@ -140,7 +136,6 @@ const Discover = () => {
       return;
     }
 
-    // First, create a match if it doesn't exist
     const { error: matchError } = await supabase
       .from('matches')
       .insert({
@@ -158,8 +153,10 @@ const Discover = () => {
       return;
     }
 
-    // Navigate to messages
-    navigate('/messages');
+    toast({
+      title: "Connection created!",
+      description: "You can now message this person. Check your messages.",
+    });
   };
 
   const handlePass = () => {
@@ -181,8 +178,8 @@ const Discover = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
+      <div className="max-w-md mx-auto p-6">
+        <div className="text-center py-8">
           <Heart className="w-8 h-8 text-pink-500 animate-pulse mx-auto mb-4" />
           <p className="text-gray-600">Finding people for you...</p>
         </div>
@@ -191,59 +188,26 @@ const Discover = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50 to-indigo-50">
-      <nav className="bg-white/80 backdrop-blur-lg border-b border-pink-100 p-4 sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/dashboard')}
-            className="text-pink-600 hover:bg-pink-50 transition-all duration-200"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Back to Dashboard</span>
-            <span className="sm:hidden">Back</span>
-          </Button>
-          
-          <div className="flex items-center space-x-2">
-            <div className="bg-gradient-to-r from-pink-500 to-purple-600 p-2 rounded-lg">
-              <Heart className="w-6 h-6 text-white" />
+    <div className="max-w-md mx-auto p-4 sm:p-6">
+      {currentProfile ? (
+        <ProfileCard
+          profile={currentProfile}
+          isPremium={isPremium}
+          onLike={handleLike}
+          onPass={handlePass}
+          onMessage={handleMessage}
+        />
+      ) : (
+        <Card className="text-center p-6 sm:p-8 shadow-xl">
+          <div className="mb-6">
+            <div className="w-20 h-20 bg-gradient-to-r from-pink-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Heart className="w-10 h-10 text-pink-500" />
             </div>
-            <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
-              Discover
-            </span>
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">No more profiles</h2>
+            <p className="text-gray-600 mb-4">Check back later for more people to discover!</p>
           </div>
-          
-          <div className="w-20"></div> {/* Spacer for centering */}
-        </div>
-      </nav>
-
-      <div className="max-w-md mx-auto p-4 sm:p-6">
-        {currentProfile ? (
-          <ProfileCard
-            profile={currentProfile}
-            isPremium={isPremium}
-            onLike={handleLike}
-            onPass={handlePass}
-            onMessage={handleMessage}
-          />
-        ) : (
-          <Card className="text-center p-6 sm:p-8 shadow-xl">
-            <div className="mb-6">
-              <div className="w-20 h-20 bg-gradient-to-r from-pink-100 to-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Heart className="w-10 h-10 text-pink-500" />
-              </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">No more profiles</h2>
-              <p className="text-gray-600 mb-4">Check back later for more people to discover!</p>
-            </div>
-            <Button
-              onClick={() => navigate('/dashboard')}
-              className="bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white transition-all duration-200 transform hover:scale-105"
-            >
-              Back to Dashboard
-            </Button>
-          </Card>
-        )}
-      </div>
+        </Card>
+      )}
     </div>
   );
 };
