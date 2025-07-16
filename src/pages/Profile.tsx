@@ -5,11 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Camera, Save, Plus, X, Crown } from 'lucide-react';
+import { Save, Plus, X, Crown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { ProfileImageUpload } from "@/components/profile/ProfileImageUpload";
 
 interface Profile {
   id: string;
@@ -151,6 +151,15 @@ const Profile = () => {
     });
   };
 
+  const handleImageUpdate = (url: string | null) => {
+    if (profile) {
+      setProfile({
+        ...profile,
+        profile_image_url: url
+      });
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -190,17 +199,11 @@ const Profile = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-4">
-            <Avatar className="w-32 h-32 mx-auto">
-              <AvatarImage src={profile.profile_image_url || ""} />
-              <AvatarFallback className="text-2xl bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                {profile.first_name?.[0] || "?"}
-              </AvatarFallback>
-            </Avatar>
-            
-            <Button variant="outline" className="w-full">
-              <Camera className="w-4 h-4 mr-2" />
-              Change Photo
-            </Button>
+            <ProfileImageUpload
+              currentImageUrl={profile.profile_image_url}
+              firstName={profile.first_name}
+              onImageUpdate={handleImageUpdate}
+            />
 
             {isPremium && (
               <Badge className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white">

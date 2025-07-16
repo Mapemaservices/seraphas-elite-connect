@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +8,7 @@ import { Play, Users, Crown, Lock } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { StreamControls } from "@/components/live/StreamControls";
 
 interface LiveStream {
   id: string;
@@ -30,6 +32,7 @@ const LiveStreams = () => {
   const [streams, setStreams] = useState<LiveStream[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [activeStream, setActiveStream] = useState<LiveStream | null>(null);
 
   useEffect(() => {
     initializeStreams();
@@ -39,14 +42,33 @@ const LiveStreams = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       setCurrentUserId(session.user.id);
+      await checkActiveStream(session.user.id);
     }
     await loadStreams();
     setIsLoading(false);
   };
 
+  const checkActiveStream = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('live_streams')
+        .select('*')
+        .eq('streamer_id', userId)
+        .eq('is_active', true)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      setActiveStream(data);
+    } catch (error) {
+      console.error('Error checking active stream:', error);
+    }
+  };
+
   const loadStreams = async () => {
     try {
-      // First, get all active streams
       const { data: streamsData, error: streamsError } = await supabase
         .from('live_streams')
         .select('*')
@@ -60,10 +82,8 @@ const LiveStreams = () => {
         return;
       }
 
-      // Get unique streamer IDs
       const streamerIds = [...new Set(streamsData.map(stream => stream.streamer_id))];
 
-      // Fetch profiles for all streamers
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('user_id, first_name, profile_image_url, is_premium')
@@ -71,18 +91,15 @@ const LiveStreams = () => {
 
       if (profilesError) {
         console.error('Error loading profiles:', profilesError);
-        // Set streams without profile data
         setStreams(streamsData.map(stream => ({ ...stream, streamer_profile: null })));
         return;
       }
 
-      // Create a map of user_id to profile
       const profilesMap = new Map();
       profilesData?.forEach(profile => {
         profilesMap.set(profile.user_id, profile);
       });
 
-      // Combine streams with their profile data
       const streamsWithProfiles = streamsData.map(stream => ({
         ...stream,
         streamer_profile: profilesMap.get(stream.streamer_id) || null
@@ -109,7 +126,6 @@ const LiveStreams = () => {
       return;
     }
 
-    // Handle watching the stream (implementation depends on your streaming setup)
     toast({
       title: "Joining stream",
       description: `Connecting to ${stream.title}...`,
@@ -124,79 +140,14 @@ const LiveStreams = () => {
     }
   };
 
-  const startStream = async (title: string, description: string, isPremiumOnly: boolean = false) => {
-    try {
-      const { error } = await supabase
-        .from('live_streams')
-        .insert({
-          streamer_id: currentUserId,
-          title,
-          description,
-          is_active: true,
-          is_premium_only: isPremiumOnly
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Stream started!",
-        description: "Your live stream is now active.",
-      });
-
-      await loadStreams();
-    } catch (error) {
-      toast({
-        title: "Error starting stream",
-        description: error instanceof Error ? error.message : "Failed to start stream",
-        variant: "destructive"
-      });
-    }
+  const handleStreamStarted = async () => {
+    await checkActiveStream(currentUserId);
+    await loadStreams();
   };
 
-  const endStream = async (streamId: string) => {
-    try {
-      const { error } = await supabase
-        .from('live_streams')
-        .update({
-          is_active: false,
-          ended_at: new Date().toISOString()
-        })
-        .eq('id', streamId);
-
-      if (error) throw error;
-
-      toast({
-        title: "Stream ended",
-        description: "Your live stream has been ended.",
-      });
-
-      await loadStreams();
-    } catch (error) {
-      toast({
-        title: "Error ending stream",
-        description: error instanceof Error ? error.message : "Failed to end stream",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const updateStream = async (streamId: string, updates: Partial<LiveStream>) => {
-    try {
-      const { error } = await supabase
-        .from('live_streams')
-        .update(updates)
-        .eq('id', streamId);
-
-      if (error) throw error;
-
-      await loadStreams();
-    } catch (error) {
-      toast({
-        title: "Error updating stream",
-        description: error instanceof Error ? error.message : "Failed to update stream",
-        variant: "destructive"
-      });
-    }
+  const handleStreamEnded = async () => {
+    setActiveStream(null);
+    await loadStreams();
   };
 
   if (isLoading) {
@@ -214,8 +165,18 @@ const LiveStreams = () => {
     <div className="max-w-7xl mx-auto p-4 sm:p-6">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Live Streams</h1>
-        <p className="text-gray-600">Watch live streams from our community</p>
+        <p className="text-gray-600">Watch and broadcast live streams from our community</p>
       </div>
+
+      {/* Stream Controls */}
+      {currentUserId && (
+        <StreamControls
+          currentUserId={currentUserId}
+          activeStream={activeStream}
+          onStreamStarted={handleStreamStarted}
+          onStreamEnded={handleStreamEnded}
+        />
+      )}
 
       {/* Upgrade prompt for non-premium users */}
       {!isPremium && (
@@ -247,7 +208,7 @@ const LiveStreams = () => {
               <Play className="w-10 h-10 text-pink-500" />
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">No Live Streams</h2>
-            <p className="text-gray-600 mb-4">There are no active streams right now. Check back later!</p>
+            <p className="text-gray-600 mb-4">There are no active streams right now. Start your own stream!</p>
           </div>
         </Card>
       ) : (

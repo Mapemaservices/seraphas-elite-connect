@@ -90,36 +90,60 @@ const Discover = () => {
       return;
     }
 
-    const { error } = await supabase
-      .from('matches')
-      .insert({
-        user_id: currentUserId,
-        matched_user_id: currentProfile.user_id,
-        status: 'pending'
-      });
+    try {
+      const { error } = await supabase
+        .from('matches')
+        .insert({
+          user_id: currentUserId,
+          matched_user_id: currentProfile.user_id,
+          status: 'pending'
+        });
 
-    if (error) {
-      console.error('Match error:', error);
-      if (error.code === '23505') {
-        toast({
-          title: "Already liked",
-          description: "You've already liked this person!",
-          variant: "destructive"
-        });
+      if (error) {
+        console.error('Match error:', error);
+        if (error.code === '23505') {
+          toast({
+            title: "Already liked",
+            description: "You've already liked this person!",
+            variant: "destructive"
+          });
+        } else {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive"
+          });
+        }
       } else {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive"
-        });
+        setExistingMatches(prev => new Set([...prev, currentProfile.user_id]));
+        
+        // Check if it's a mutual match
+        const { data: mutualMatch } = await supabase
+          .from('matches')
+          .select('id')
+          .eq('user_id', currentProfile.user_id)
+          .eq('matched_user_id', currentUserId);
+
+        if (mutualMatch && mutualMatch.length > 0) {
+          toast({
+            title: "It's a Match! 🎉",
+            description: "You can now message each other!",
+          });
+        } else {
+          toast({
+            title: "Match sent!",
+            description: "We'll let you know if they're interested too.",
+          });
+        }
       }
-    } else {
-      setExistingMatches(prev => new Set([...prev, currentProfile.user_id]));
+    } catch (error) {
       toast({
-        title: "Match sent!",
-        description: "We'll let you know if they're interested too.",
+        title: "Error",
+        description: "Failed to send match",
+        variant: "destructive"
       });
     }
+    
     nextProfile();
   };
 
@@ -127,6 +151,7 @@ const Discover = () => {
     const currentProfile = profiles[currentIndex];
     if (!currentProfile) return;
 
+    // Check premium restrictions
     if (!isPremium && !currentProfile.is_premium) {
       toast({
         title: "Premium Required",
@@ -136,23 +161,44 @@ const Discover = () => {
       return;
     }
 
-    // Create a match/connection if one doesn't exist
-    const { error: matchError } = await supabase
-      .from('matches')
-      .insert({
-        user_id: currentUserId,
-        matched_user_id: currentProfile.user_id,
-        status: 'pending'
+    try {
+      // Create a match/connection if one doesn't exist
+      const { error: matchError } = await supabase
+        .from('matches')
+        .insert({
+          user_id: currentUserId,
+          matched_user_id: currentProfile.user_id,
+          status: 'pending'
+        });
+
+      if (matchError && matchError.code !== '23505') {
+        console.error('Match error:', matchError);
+      }
+
+      // Send an initial message to start the conversation
+      const { error: messageError } = await supabase
+        .from('messages_between_users')
+        .insert({
+          sender_id: currentUserId,
+          receiver_id: currentProfile.user_id,
+          content: 'Hi! I found your profile interesting. Would you like to chat?'
+        });
+
+      if (messageError) {
+        console.error('Message error:', messageError);
+      }
+
+      toast({
+        title: "Connection created!",
+        description: "Your message has been sent. Check your messages to continue the conversation.",
       });
-
-    if (matchError && matchError.code !== '23505') {
-      console.error('Match error:', matchError);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create connection",
+        variant: "destructive"
+      });
     }
-
-    toast({
-      title: "Connection created!",
-      description: "You can now message this person.",
-    });
   };
 
   const handlePass = () => {
@@ -163,10 +209,13 @@ const Discover = () => {
     if (currentIndex < profiles.length - 1) {
       setCurrentIndex(currentIndex + 1);
     } else {
+      // Load more profiles
       toast({
-        title: "No more profiles",
-        description: "Check back later for more people to discover!",
+        title: "Loading more profiles...",
+        description: "Finding more people for you to discover!",
       });
+      getProfiles(currentUserId);
+      setCurrentIndex(0);
     }
   };
 
@@ -185,6 +234,11 @@ const Discover = () => {
 
   return (
     <div className="max-w-md mx-auto p-4 sm:p-6">
+      <div className="mb-6 text-center">
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Discover</h1>
+        <p className="text-gray-600">Find your perfect match</p>
+      </div>
+
       {currentProfile ? (
         <ProfileCard
           profile={currentProfile}
