@@ -59,6 +59,7 @@ const Discover = () => {
 
       if (data) {
         setCurrentUserGender(data.gender);
+        console.log('Current user gender:', data.gender);
       }
     } catch (error) {
       console.error('Error getting current user gender:', error);
@@ -67,6 +68,9 @@ const Discover = () => {
 
   const getProfiles = async (userId: string) => {
     try {
+      console.log('Fetching profiles for user:', userId);
+      console.log('Current user gender:', currentUserGender);
+      
       // Get existing matches to avoid duplicates
       const { data: matchesData } = await supabase
         .from('matches')
@@ -75,6 +79,7 @@ const Discover = () => {
 
       const matchedUserIds = new Set(matchesData?.map(match => match.matched_user_id) || []);
       setExistingMatches(matchedUserIds);
+      console.log('Existing matches:', matchedUserIds);
 
       // Build query to get profiles excluding already matched users and current user
       let query = supabase
@@ -82,12 +87,13 @@ const Discover = () => {
         .select('*')
         .neq('user_id', userId)
         .not('gender', 'is', null) // Only show profiles with gender set
-        .limit(10);
+        .limit(20); // Increased limit to get more profiles
 
       // Filter by opposite gender if current user has gender set
       if (currentUserGender) {
         const targetGender = currentUserGender === 'male' ? 'female' : 'male';
         query = query.eq('gender', targetGender);
+        console.log('Filtering for gender:', targetGender);
       }
 
       if (matchedUserIds.size > 0) {
@@ -96,9 +102,16 @@ const Discover = () => {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching profiles:', error);
+        throw error;
+      }
+      
+      console.log('Fetched profiles:', data);
       setProfiles(data || []);
+      setCurrentIndex(0); // Reset to first profile
     } catch (error) {
+      console.error('Error in getProfiles:', error);
       toast({
         title: "Error loading profiles",
         description: error instanceof Error ? error.message : "Failed to load profiles",
@@ -106,6 +119,14 @@ const Discover = () => {
       });
     }
   };
+
+  // Refresh profiles when gender changes
+  useEffect(() => {
+    if (currentUserId && currentUserGender !== null) {
+      console.log('Gender updated, refreshing profiles...');
+      getProfiles(currentUserId);
+    }
+  }, [currentUserGender, currentUserId]);
 
   const handleLike = async () => {
     const currentProfile = profiles[currentIndex];
@@ -246,7 +267,6 @@ const Discover = () => {
         description: "Finding more people for you to discover!",
       });
       getProfiles(currentUserId);
-      setCurrentIndex(0);
     }
   };
 
@@ -271,6 +291,11 @@ const Discover = () => {
         {!currentUserGender && (
           <p className="text-sm text-orange-600 mt-2">
             Complete your profile with gender to see better matches!
+          </p>
+        )}
+        {currentUserGender && profiles.length === 0 && (
+          <p className="text-sm text-blue-600 mt-2">
+            Looking for {currentUserGender === 'male' ? 'female' : 'male'} profiles...
           </p>
         )}
       </div>

@@ -75,7 +75,7 @@ export const ProfileImageUpload = ({
       // Create unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
-      const filePath = `profile-images/${fileName}`;
+      const filePath = `${fileName}`; // Remove the profile-images/ prefix as it's already in the bucket name
 
       console.log('Uploading file to path:', filePath);
 
@@ -87,12 +87,18 @@ export const ProfileImageUpload = ({
         console.error('Bucket list error:', bucketError);
       }
 
+      // Check if profile-images bucket exists
+      const profileImagesBucket = buckets?.find(bucket => bucket.id === 'profile-images');
+      if (!profileImagesBucket) {
+        throw new Error('Profile images bucket not found. Please contact support.');
+      }
+
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profile-images')
         .upload(filePath, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: true // Allow overwriting if file exists
         });
 
       if (uploadError) {
