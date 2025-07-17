@@ -25,6 +25,8 @@ export const ProfileImageUpload = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    console.log('File selected:', file);
+
     // Validate file type
     if (!file.type.startsWith('image/')) {
       toast({
@@ -55,28 +57,57 @@ export const ProfileImageUpload = ({
     setIsUploading(true);
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      console.log('Getting user...');
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      if (userError) {
+        console.error('User error:', userError);
+        throw new Error('Failed to get user: ' + userError.message);
+      }
+      
+      if (!user) {
+        console.error('No user found');
+        throw new Error('User not authenticated');
+      }
+
+      console.log('User found:', user.id);
 
       // Create unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `profile-images/${fileName}`;
 
+      console.log('Uploading file to path:', filePath);
+
+      // Check if bucket exists first
+      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+      console.log('Available buckets:', buckets);
+      
+      if (bucketError) {
+        console.error('Bucket list error:', bucketError);
+      }
+
       // Upload to Supabase Storage
-      const { error: uploadError } = await supabase.storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('profile-images')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Upload error:', uploadError);
+        throw uploadError;
+      }
+
+      console.log('Upload successful:', uploadData);
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from('profile-images')
         .getPublicUrl(filePath);
+
+      console.log('Public URL:', publicUrl);
 
       // Update profile with new image URL
       const { error: updateError } = await supabase
@@ -87,8 +118,12 @@ export const ProfileImageUpload = ({
         })
         .eq('user_id', user.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error('Profile update error:', updateError);
+        throw updateError;
+      }
 
+      console.log('Profile updated successfully');
       onImageUpdate(publicUrl);
       toast({
         title: "Profile image updated",
