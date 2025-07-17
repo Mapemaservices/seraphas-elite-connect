@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Save, Plus, X, Crown } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -22,6 +23,7 @@ interface Profile {
   interests: string[] | null;
   profile_image_url: string | null;
   is_premium: boolean | null;
+  gender: string | null;
 }
 
 const Profile = () => {
@@ -65,7 +67,8 @@ const Profile = () => {
           location: '',
           interests: [],
           profile_image_url: null,
-          is_premium: isPremium
+          is_premium: isPremium,
+          gender: null
         };
 
         const { data: createdProfile, error: createError } = await supabase
@@ -102,6 +105,7 @@ const Profile = () => {
           age: profile.age,
           location: profile.location,
           interests: profile.interests,
+          gender: profile.gender,
           updated_at: new Date().toISOString()
         })
         .eq('id', profile.id);
@@ -242,7 +246,7 @@ const Profile = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Age
@@ -255,6 +259,23 @@ const Profile = () => {
                   min="18"
                   max="100"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Gender
+                </label>
+                <Select
+                  value={profile.gender || ''}
+                  onValueChange={(value) => setProfile({ ...profile, gender: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">

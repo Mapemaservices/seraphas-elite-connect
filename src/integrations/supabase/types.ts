@@ -138,6 +138,7 @@ export type Database = {
           created_at: string
           email: string | null
           first_name: string | null
+          gender: string | null
           id: string
           interests: string[] | null
           is_premium: boolean | null
@@ -153,6 +154,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           first_name?: string | null
+          gender?: string | null
           id?: string
           interests?: string[] | null
           is_premium?: boolean | null
@@ -168,6 +170,7 @@ export type Database = {
           created_at?: string
           email?: string | null
           first_name?: string | null
+          gender?: string | null
           id?: string
           interests?: string[] | null
           is_premium?: boolean | null

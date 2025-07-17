@@ -17,6 +17,7 @@ interface Profile {
   interests: string[] | null;
   profile_image_url: string | null;
   is_premium: boolean | null;
+  gender: string | null;
 }
 
 const Discover = () => {
@@ -26,6 +27,7 @@ const Discover = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [currentUserGender, setCurrentUserGender] = useState<string | null>(null);
   const [existingMatches, setExistingMatches] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -36,9 +38,31 @@ const Discover = () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       setCurrentUserId(session.user.id);
+      await getCurrentUserGender(session.user.id);
       await getProfiles(session.user.id);
     }
     setIsLoading(false);
+  };
+
+  const getCurrentUserGender = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('gender')
+        .eq('user_id', userId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching user gender:', error);
+        return;
+      }
+
+      if (data) {
+        setCurrentUserGender(data.gender);
+      }
+    } catch (error) {
+      console.error('Error getting current user gender:', error);
+    }
   };
 
   const getProfiles = async (userId: string) => {
@@ -52,12 +76,19 @@ const Discover = () => {
       const matchedUserIds = new Set(matchesData?.map(match => match.matched_user_id) || []);
       setExistingMatches(matchedUserIds);
 
-      // Get profiles excluding already matched users and current user
+      // Build query to get profiles excluding already matched users and current user
       let query = supabase
         .from('profiles')
         .select('*')
         .neq('user_id', userId)
+        .not('gender', 'is', null) // Only show profiles with gender set
         .limit(10);
+
+      // Filter by opposite gender if current user has gender set
+      if (currentUserGender) {
+        const targetGender = currentUserGender === 'male' ? 'female' : 'male';
+        query = query.eq('gender', targetGender);
+      }
 
       if (matchedUserIds.size > 0) {
         query = query.not('user_id', 'in', `(${Array.from(matchedUserIds).join(',')})`);
@@ -237,6 +268,11 @@ const Discover = () => {
       <div className="mb-6 text-center">
         <h1 className="text-2xl font-bold text-gray-900 mb-2">Discover</h1>
         <p className="text-gray-600">Find your perfect match</p>
+        {!currentUserGender && (
+          <p className="text-sm text-orange-600 mt-2">
+            Complete your profile with gender to see better matches!
+          </p>
+        )}
       </div>
 
       {currentProfile ? (
@@ -255,7 +291,12 @@ const Discover = () => {
               <Heart className="w-10 h-10 text-pink-500" />
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">No more profiles</h2>
-            <p className="text-gray-600 mb-4">Check back later for more people to discover!</p>
+            <p className="text-gray-600 mb-4">
+              {!currentUserGender 
+                ? "Complete your profile with gender information to see matches!" 
+                : "Check back later for more people to discover!"
+              }
+            </p>
           </div>
         </Card>
       )}
