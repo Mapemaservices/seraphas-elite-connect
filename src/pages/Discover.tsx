@@ -69,7 +69,6 @@ const Discover = () => {
   const getProfiles = async (userId: string) => {
     try {
       console.log('Fetching profiles for user:', userId);
-      console.log('Current user gender:', currentUserGender);
       
       // Get existing matches to avoid duplicates
       const { data: matchesData } = await supabase
@@ -81,21 +80,35 @@ const Discover = () => {
       setExistingMatches(matchedUserIds);
       console.log('Existing matches:', matchedUserIds);
 
+      // Get current user's gender
+      const { data: currentUserProfile } = await supabase
+        .from('profiles')
+        .select('gender')
+        .eq('user_id', userId)
+        .single();
+
+      const userGender = currentUserProfile?.gender;
+      console.log('User gender for filtering:', userGender);
+
       // Build query to get profiles excluding already matched users and current user
       let query = supabase
         .from('profiles')
         .select('*')
         .neq('user_id', userId)
-        .not('gender', 'is', null) // Only show profiles with gender set
-        .limit(20); // Increased limit to get more profiles
+        .limit(20);
 
-      // Filter by opposite gender if current user has gender set
-      if (currentUserGender) {
-        const targetGender = currentUserGender === 'male' ? 'female' : 'male';
+      // If user has gender set, filter by opposite gender, otherwise show all
+      if (userGender && userGender !== '') {
+        const targetGender = userGender === 'male' ? 'female' : 'male';
         query = query.eq('gender', targetGender);
         console.log('Filtering for gender:', targetGender);
+      } else {
+        // If current user has no gender, show all profiles except those without gender
+        query = query.not('gender', 'is', null);
+        console.log('User has no gender set, showing all profiles with gender');
       }
 
+      // Exclude already matched users
       if (matchedUserIds.size > 0) {
         query = query.not('user_id', 'in', `(${Array.from(matchedUserIds).join(',')})`);
       }
@@ -107,9 +120,14 @@ const Discover = () => {
         throw error;
       }
       
+      console.log('Fetched profiles count:', data?.length || 0);
       console.log('Fetched profiles:', data);
       setProfiles(data || []);
-      setCurrentIndex(0); // Reset to first profile
+      setCurrentIndex(0);
+      
+      if (data && data.length > 0) {
+        console.log('First profile to show:', data[0]);
+      }
     } catch (error) {
       console.error('Error in getProfiles:', error);
       toast({
@@ -119,14 +137,6 @@ const Discover = () => {
       });
     }
   };
-
-  // Refresh profiles when gender changes
-  useEffect(() => {
-    if (currentUserId && currentUserGender !== null) {
-      console.log('Gender updated, refreshing profiles...');
-      getProfiles(currentUserId);
-    }
-  }, [currentUserGender, currentUserId]);
 
   const handleLike = async () => {
     const currentProfile = profiles[currentIndex];
@@ -290,12 +300,12 @@ const Discover = () => {
         <p className="text-gray-600">Find your perfect match</p>
         {!currentUserGender && (
           <p className="text-sm text-orange-600 mt-2">
-            Complete your profile with gender to see better matches!
+            Set your gender in your profile to see targeted matches!
           </p>
         )}
-        {currentUserGender && profiles.length === 0 && (
+        {profiles.length === 0 && !isLoading && (
           <p className="text-sm text-blue-600 mt-2">
-            Looking for {currentUserGender === 'male' ? 'female' : 'male'} profiles...
+            No more profiles to show. Check back later for new members!
           </p>
         )}
       </div>
@@ -318,7 +328,7 @@ const Discover = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">No more profiles</h2>
             <p className="text-gray-600 mb-4">
               {!currentUserGender 
-                ? "Complete your profile with gender information to see matches!" 
+                ? "Set your gender in your profile to see better matches!" 
                 : "Check back later for more people to discover!"
               }
             </p>
