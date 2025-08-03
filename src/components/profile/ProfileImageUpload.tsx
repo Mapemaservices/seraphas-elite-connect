@@ -79,19 +79,7 @@ export const ProfileImageUpload = ({
 
       console.log('Uploading file to path:', filePath);
 
-      // Check if bucket exists first
-      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-      console.log('Available buckets:', buckets);
-      
-      if (bucketError) {
-        console.error('Bucket list error:', bucketError);
-      }
-
-      // Check if profile-images bucket exists
-      const profileImagesBucket = buckets?.find(bucket => bucket.id === 'profile-images');
-      if (!profileImagesBucket) {
-        throw new Error('Profile images bucket not found. Please contact support.');
-      }
+      // Simplified upload without bucket check
 
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage

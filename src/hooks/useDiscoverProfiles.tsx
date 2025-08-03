@@ -50,68 +50,75 @@ export const useDiscoverProfiles = (currentUserId: string) => {
       console.log('Fetching profiles for user:', userId);
       
       // Get existing matches to avoid duplicates
-      const { data: matchesData } = await supabase
+      const { data: matchesData, error: matchError } = await supabase
         .from('matches')
         .select('matched_user_id')
         .eq('user_id', userId);
 
+      if (matchError) {
+        console.error('Error fetching matches:', matchError);
+      }
+
       const matchedUserIds = new Set(matchesData?.map(match => match.matched_user_id) || []);
       setExistingMatches(matchedUserIds);
-      console.log('Existing matches:', matchedUserIds);
 
-      // Get current user's gender within the same query flow
-      const { data: currentUserProfile } = await supabase
+      // Get current user's gender
+      const { data: currentUserProfile, error: profileError } = await supabase
         .from('profiles')
         .select('gender')
         .eq('user_id', userId)
-        .single();
+        .maybeSingle();
+
+      if (profileError) {
+        console.error('Error fetching user profile:', profileError);
+      }
 
       const userGender = currentUserProfile?.gender;
       console.log('User gender for filtering:', userGender);
 
-      // Build query to get profiles excluding already matched users and current user
+      // Build query to get profiles excluding current user
       let query = supabase
         .from('profiles')
         .select('*')
         .neq('user_id', userId)
         .limit(20);
 
-      // Show profiles regardless of gender if user hasn't set their gender
-      // This allows discovery to work for all users
-      if (userGender && userGender !== '') {
-        const targetGender = userGender === 'male' ? 'female' : 'male';
-        query = query.eq('gender', targetGender);
+      // Filter by opposite gender if user has set their gender
+      if (userGender && userGender.trim() !== '') {
+        const targetGender = userGender.toLowerCase() === 'male' ? 'female' : 'male';
+        query = query.ilike('gender', targetGender);
         console.log('Filtering for gender:', targetGender);
       } else {
-        // Show all profiles with any gender (including null)
         console.log('User has no gender set, showing all profiles');
       }
 
       // Exclude already matched users
       if (matchedUserIds.size > 0) {
-        query = query.not('user_id', 'in', `(${Array.from(matchedUserIds).join(',')})`);
+        const matchedArray = Array.from(matchedUserIds);
+        query = query.not('user_id', 'in', `(${matchedArray.join(',')})`);
       }
 
       const { data, error } = await query;
 
       if (error) {
         console.error('Error fetching profiles:', error);
-        throw error;
+        // Don't throw error, just show empty state
+        setProfiles([]);
+        setCurrentIndex(0);
+        return;
       }
       
       console.log('Fetched profiles count:', data?.length || 0);
-      console.log('Fetched profiles:', data);
       setProfiles(data || []);
       setCurrentIndex(0);
       
-      if (data && data.length > 0) {
-        console.log('First profile to show:', data[0]);
-      }
     } catch (error) {
       console.error('Error in getProfiles:', error);
+      setProfiles([]);
+      setCurrentIndex(0);
       toast({
         title: "Error loading profiles",
-        description: error instanceof Error ? error.message : "Failed to load profiles",
+        description: "Unable to load profiles. Please try again.",
         variant: "destructive"
       });
     }

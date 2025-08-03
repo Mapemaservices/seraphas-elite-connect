@@ -46,7 +46,7 @@ export const StreamControls = ({
 
     setIsStarting(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('live_streams')
         .insert({
           streamer_id: currentUserId,
