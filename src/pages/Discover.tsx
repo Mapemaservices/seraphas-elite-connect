@@ -4,7 +4,7 @@ import { Heart } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/contexts/SubscriptionContext";
-import { ProfileCard } from "@/components/discover/ProfileCard";
+import { ProfileFeed } from "@/components/discover/ProfileFeed";
 import { DiscoverHeader } from "@/components/discover/DiscoverHeader";
 import { EmptyState } from "@/components/discover/EmptyState";
 import { useDiscoverProfiles } from "@/hooks/useDiscoverProfiles";
@@ -12,18 +12,18 @@ import { useDiscoverProfiles } from "@/hooks/useDiscoverProfiles";
 const Discover = () => {
   const { toast } = useToast();
   const { isPremium } = useSubscription();
-  const [isLoading, setIsLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const [isInitializing, setIsInitializing] = useState(true);
 
   const {
     profiles,
-    currentIndex,
+    isLoading,
     currentUserGender,
     existingMatches,
     setExistingMatches,
-    getProfiles,
-    nextProfile,
-    currentProfile
+    loadMoreProfiles,
+    refreshProfiles,
+    hasMore
   } = useDiscoverProfiles(currentUserId);
 
   useEffect(() => {
@@ -35,19 +35,16 @@ const Discover = () => {
     if (session?.user) {
       setCurrentUserId(session.user.id);
     }
-    setIsLoading(false);
+    setIsInitializing(false);
   };
 
-  const handleLike = async () => {
-    if (!currentProfile) return;
-
-    if (existingMatches.has(currentProfile.user_id)) {
+  const handleLike = async (profile: any) => {
+    if (existingMatches.has(profile.user_id)) {
       toast({
         title: "Already liked",
         description: "You've already liked this person!",
         variant: "destructive"
       });
-      nextProfile();
       return;
     }
 
@@ -56,7 +53,7 @@ const Discover = () => {
         .from('matches')
         .insert({
           user_id: currentUserId,
-          matched_user_id: currentProfile.user_id,
+          matched_user_id: profile.user_id,
           status: 'pending'
         });
 
@@ -76,13 +73,13 @@ const Discover = () => {
           });
         }
       } else {
-        setExistingMatches(prev => new Set([...prev, currentProfile.user_id]));
+        setExistingMatches(prev => new Set([...prev, profile.user_id]));
         
         // Check if it's a mutual match
         const { data: mutualMatch } = await supabase
           .from('matches')
           .select('id')
-          .eq('user_id', currentProfile.user_id)
+          .eq('user_id', profile.user_id)
           .eq('matched_user_id', currentUserId);
 
         if (mutualMatch && mutualMatch.length > 0) {
@@ -104,15 +101,12 @@ const Discover = () => {
         variant: "destructive"
       });
     }
-    
-    nextProfile();
   };
 
-  const handleMessage = async () => {
-    if (!currentProfile) return;
+  const handleMessage = async (profile: any) => {
 
     // Check premium restrictions
-    if (!isPremium && !currentProfile.is_premium) {
+    if (!isPremium && !profile.is_premium) {
       toast({
         title: "Premium Required",
         description: "Upgrade to Premium to message other users, or wait for a Premium member to message you first.",
@@ -127,7 +121,7 @@ const Discover = () => {
         .from('matches')
         .insert({
           user_id: currentUserId,
-          matched_user_id: currentProfile.user_id,
+          matched_user_id: profile.user_id,
           status: 'pending'
         });
 
@@ -140,7 +134,7 @@ const Discover = () => {
         .from('messages_between_users')
         .insert({
           sender_id: currentUserId,
-          receiver_id: currentProfile.user_id,
+          receiver_id: profile.user_id,
           content: 'Hi! I found your profile interesting. Would you like to chat?'
         });
 
@@ -161,11 +155,7 @@ const Discover = () => {
     }
   };
 
-  const handlePass = () => {
-    nextProfile();
-  };
-
-  if (isLoading) {
+  if (isInitializing) {
     return (
       <div className="max-w-md mx-auto p-6">
         <div className="text-center py-8">
@@ -177,21 +167,24 @@ const Discover = () => {
   }
 
   return (
-    <div className="max-w-md mx-auto p-4 sm:p-6">
+    <div className="max-w-lg mx-auto p-4 sm:p-6">
       <DiscoverHeader 
         currentUserGender={currentUserGender}
         profilesCount={profiles.length}
         isLoading={isLoading}
       />
 
-      {currentProfile ? (
-        <ProfileCard
-          profile={currentProfile}
+      {profiles.length > 0 ? (
+        <ProfileFeed
+          profiles={profiles}
           isPremium={isPremium}
           currentUserId={currentUserId}
+          isLoading={isLoading}
+          hasMore={hasMore}
+          existingMatches={existingMatches}
           onLike={handleLike}
-          onPass={handlePass}
           onMessage={handleMessage}
+          onLoadMore={loadMoreProfiles}
         />
       ) : (
         <EmptyState currentUserGender={currentUserGender} />

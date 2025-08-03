@@ -19,9 +19,12 @@ interface Profile {
 export const useDiscoverProfiles = (currentUserId: string) => {
   const { toast } = useToast();
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const [currentUserGender, setCurrentUserGender] = useState<string | null>(null);
   const [existingMatches, setExistingMatches] = useState<Set<string>>(new Set());
+  const [hasMore, setHasMore] = useState(true);
+  const [offset, setOffset] = useState(0);
+  const LIMIT = 10;
 
   const getCurrentUserGender = async (userId: string) => {
     try {
@@ -45,7 +48,10 @@ export const useDiscoverProfiles = (currentUserId: string) => {
     }
   };
 
-  const getProfiles = async (userId: string) => {
+  const getProfiles = async (userId: string, loadMore = false) => {
+    if (isLoading) return;
+    
+    setIsLoading(true);
     try {
       console.log('Fetching profiles for user:', userId);
       
@@ -81,7 +87,8 @@ export const useDiscoverProfiles = (currentUserId: string) => {
         .from('profiles')
         .select('*')
         .neq('user_id', userId)
-        .limit(20);
+        .range(loadMore ? offset : 0, loadMore ? offset + LIMIT - 1 : LIMIT - 1)
+        .order('created_at', { ascending: false });
 
       // Filter by opposite gender if user has set their gender
       if (userGender && userGender.trim() !== '') {
@@ -102,56 +109,74 @@ export const useDiscoverProfiles = (currentUserId: string) => {
 
       if (error) {
         console.error('Error fetching profiles:', error);
-        // Don't throw error, just show empty state
-        setProfiles([]);
-        setCurrentIndex(0);
+        if (!loadMore) {
+          setProfiles([]);
+        }
         return;
       }
       
       console.log('Fetched profiles count:', data?.length || 0);
-      setProfiles(data || []);
-      setCurrentIndex(0);
+      
+      if (loadMore) {
+        setProfiles(prev => [...prev, ...(data || [])]);
+      } else {
+        setProfiles(data || []);
+        setOffset(0);
+      }
+      
+      if (data && data.length < LIMIT) {
+        setHasMore(false);
+      }
+      
+      if (loadMore) {
+        setOffset(prev => prev + LIMIT);
+      }
       
     } catch (error) {
       console.error('Error in getProfiles:', error);
-      setProfiles([]);
-      setCurrentIndex(0);
+      if (!loadMore) {
+        setProfiles([]);
+      }
       toast({
         title: "Error loading profiles",
         description: "Unable to load profiles. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const nextProfile = () => {
-    if (currentIndex < profiles.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      // Load more profiles
-      toast({
-        title: "Loading more profiles...",
-        description: "Finding more people for you to discover!",
-      });
-      getProfiles(currentUserId);
+  const loadMoreProfiles = () => {
+    if (currentUserId && hasMore && !isLoading) {
+      getProfiles(currentUserId, true);
+    }
+  };
+
+  const refreshProfiles = () => {
+    if (currentUserId) {
+      setOffset(0);
+      setHasMore(true);
+      getProfiles(currentUserId, false);
     }
   };
 
   useEffect(() => {
     if (currentUserId) {
       getCurrentUserGender(currentUserId);
-      getProfiles(currentUserId);
+      getProfiles(currentUserId, false);
     }
   }, [currentUserId]);
 
   return {
     profiles,
-    currentIndex,
+    isLoading,
     currentUserGender,
     existingMatches,
     setExistingMatches,
     getProfiles,
-    nextProfile,
-    currentProfile: profiles[currentIndex]
+    loadMoreProfiles,
+    refreshProfiles,
+    hasMore
   };
 };
