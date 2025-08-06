@@ -26,6 +26,7 @@ export const ProfileImageUpload = ({
     if (!file) return;
 
     console.log('File selected:', file);
+    console.log('Starting upload process...');
 
     // Validate file type
     if (!file.type.startsWith('image/')) {
