@@ -179,7 +179,6 @@ const Messages = () => {
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedChat) return;
 
-
     try {
       // Use the new messages_between_users table
       const { error } = await supabase
@@ -216,6 +215,59 @@ const Messages = () => {
     setSelectedChatProfile(null);
     setMessages([]);
   };
+
+  // Set up real-time messaging
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    console.log('Setting up real-time messaging subscription...');
+
+    const channel = supabase
+      .channel('messages-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages_between_users',
+          filter: `or(sender_id.eq.${currentUserId},receiver_id.eq.${currentUserId})`
+        },
+        (payload) => {
+          console.log('New message received:', payload.new);
+          const newMessage = payload.new as Message;
+          
+          // If this message is for the currently selected chat, add it to messages
+          if (selectedChat && 
+              ((newMessage.sender_id === selectedChat && newMessage.receiver_id === currentUserId) ||
+               (newMessage.sender_id === currentUserId && newMessage.receiver_id === selectedChat))) {
+            setMessages(prev => [...prev, newMessage]);
+          }
+          
+          // Refresh chats list to update last message and unread count
+          loadChats(currentUserId);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'messages_between_users',
+          filter: `receiver_id.eq.${currentUserId}`
+        },
+        (payload) => {
+          console.log('Message updated (marked as read):', payload.new);
+          // Refresh chats to update unread counts
+          loadChats(currentUserId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up messaging real-time subscription...');
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId, selectedChat]);
 
   if (isLoading) {
     return (

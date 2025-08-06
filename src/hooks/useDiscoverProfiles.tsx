@@ -168,6 +168,52 @@ export const useDiscoverProfiles = (currentUserId: string) => {
     }
   }, [currentUserId]);
 
+  // Set up real-time subscription for new profiles
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    console.log('Setting up real-time subscription for new profiles...');
+
+    const channel = supabase
+      .channel('profiles-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'profiles'
+        },
+        (payload) => {
+          console.log('New profile created:', payload.new);
+          // Refresh profiles when a new user joins
+          refreshProfiles();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles'
+        },
+        (payload) => {
+          console.log('Profile updated:', payload.new);
+          // Update the specific profile in our list
+          setProfiles(prev => prev.map(profile => 
+            profile.user_id === payload.new.user_id 
+              ? { ...profile, ...payload.new }
+              : profile
+          ));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('Cleaning up profiles real-time subscription...');
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId]);
+
   return {
     profiles,
     isLoading,

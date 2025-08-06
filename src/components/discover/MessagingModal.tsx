@@ -40,8 +40,33 @@ export const MessagingModal = ({ isOpen, onClose, recipient, currentUserId }: Me
   useEffect(() => {
     if (isOpen && recipient.user_id) {
       loadMessages();
+      
+      // Set up real-time subscription for this conversation
+      console.log('Setting up modal real-time subscription for:', recipient.user_id);
+      
+      const channel = supabase
+        .channel(`modal-chat-${currentUserId}-${recipient.user_id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages_between_users',
+            filter: `or(and(sender_id.eq.${currentUserId},receiver_id.eq.${recipient.user_id}),and(sender_id.eq.${recipient.user_id},receiver_id.eq.${currentUserId}))`
+          },
+          (payload) => {
+            console.log('Real-time message in modal:', payload.new);
+            setMessages(prev => [...prev, payload.new as Message]);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        console.log('Cleaning up modal real-time subscription...');
+        supabase.removeChannel(channel);
+      };
     }
-  }, [isOpen, recipient.user_id]);
+  }, [isOpen, recipient.user_id, currentUserId]);
 
   const loadMessages = async () => {
     try {
@@ -86,7 +111,6 @@ export const MessagingModal = ({ isOpen, onClose, recipient, currentUserId }: Me
       if (error) throw error;
 
       setNewMessage('');
-      await loadMessages();
       
       toast({
         title: "Message sent!",

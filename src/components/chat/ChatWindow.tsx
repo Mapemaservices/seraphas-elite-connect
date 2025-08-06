@@ -40,9 +40,11 @@ export const ChatWindow = ({ partner, currentUserId, onClose }: ChatWindowProps)
   useEffect(() => {
     loadMessages();
     
-    // Set up real-time subscription
+    // Set up real-time subscription for this specific conversation
+    console.log('Setting up real-time subscription for chat with:', partner.user_id);
+    
     const channel = supabase
-      .channel('messages_between_users')
+      .channel(`chat-${currentUserId}-${partner.user_id}`)
       .on(
         'postgres_changes',
         {
@@ -52,12 +54,14 @@ export const ChatWindow = ({ partner, currentUserId, onClose }: ChatWindowProps)
           filter: `or(and(sender_id.eq.${currentUserId},receiver_id.eq.${partner.user_id}),and(sender_id.eq.${partner.user_id},receiver_id.eq.${currentUserId}))`
         },
         (payload) => {
+          console.log('Real-time message received in chat:', payload.new);
           setMessages(prev => [...prev, payload.new as Message]);
         }
       )
       .subscribe();
 
     return () => {
+      console.log('Cleaning up chat real-time subscription...');
       supabase.removeChannel(channel);
     };
   }, [partner.user_id, currentUserId]);
