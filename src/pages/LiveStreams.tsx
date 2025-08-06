@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { StreamControls } from "@/components/live/StreamControls";
+import { StreamViewer } from "@/components/live/StreamViewer";
 
 interface LiveStream {
   id: string;
@@ -33,9 +34,30 @@ const LiveStreams = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [activeStream, setActiveStream] = useState<LiveStream | null>(null);
+  const [selectedStream, setSelectedStream] = useState<LiveStream | null>(null);
 
   useEffect(() => {
     initializeStreams();
+    
+    // Real-time subscription for stream updates
+    const channel = supabase
+      .channel('live-streams-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'live_streams'
+        },
+        () => {
+          loadStreams();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const initializeStreams = async () => {
@@ -126,10 +148,7 @@ const LiveStreams = () => {
       return;
     }
 
-    toast({
-      title: "Joining stream",
-      description: `Connecting to ${stream.title}...`,
-    });
+    setSelectedStream(stream);
   };
 
   const handleUpgrade = async () => {
@@ -158,6 +177,16 @@ const LiveStreams = () => {
           <p className="text-gray-600">Loading live streams...</p>
         </div>
       </div>
+    );
+  }
+
+  if (selectedStream) {
+    return (
+      <StreamViewer
+        stream={selectedStream}
+        currentUserId={currentUserId}
+        onBack={() => setSelectedStream(null)}
+      />
     );
   }
 
