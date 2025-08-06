@@ -173,22 +173,12 @@ const Messages = () => {
   };
 
   const canSendMessage = () => {
-    if (isPremium) return true;
-    if (selectedChatProfile?.is_premium) return true;
-    return false;
+    return true; // Allow all users to send messages
   };
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedChat) return;
 
-    if (!canSendMessage()) {
-      toast({
-        title: "Premium Required",
-        description: "Upgrade to Premium to message other users, or wait for a Premium member to message you first.",
-        variant: "destructive"
-      });
-      return;
-    }
 
     try {
       // Use the new messages_between_users table

@@ -122,14 +122,6 @@ export const ProfileCard = ({
               </Button>
             </div>
             
-            {!isPremium && !profile.is_premium && (
-              <div className="mt-4 p-3 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg">
-                <p className="text-sm text-yellow-800 text-center">
-                  <Crown className="w-4 h-4 inline mr-1" />
-                  Upgrade to Premium to message anyone directly!
-                </p>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>
