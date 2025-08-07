@@ -63,7 +63,12 @@ export const LiveStreamChat = ({ streamId, currentUserId, viewerCount }: LiveStr
             user_profile: profile
           };
 
-          setMessages(prev => [...prev, messageWithProfile]);
+          // Only add if it's not from the current user (to prevent duplicates)
+          setMessages(prev => {
+            const exists = prev.some(msg => msg.id === messageWithProfile.id);
+            if (exists) return prev;
+            return [...prev, messageWithProfile];
+          });
         }
       )
       .subscribe();

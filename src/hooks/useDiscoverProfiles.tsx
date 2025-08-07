@@ -93,10 +93,12 @@ export const useDiscoverProfiles = (currentUserId: string) => {
       // Filter by opposite gender if user has set their gender
       if (userGender && userGender.trim() !== '') {
         const targetGender = userGender.toLowerCase() === 'male' ? 'female' : 'male';
-        query = query.ilike('gender', targetGender);
+        query = query.eq('gender', targetGender);
         console.log('Filtering for gender:', targetGender);
       } else {
         console.log('User has no gender set, showing all profiles');
+        // Still show profiles, but prioritize those with gender set
+        query = query.not('gender', 'is', null);
       }
 
       // Exclude already matched users

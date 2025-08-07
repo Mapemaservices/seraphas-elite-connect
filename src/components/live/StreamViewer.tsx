@@ -39,9 +39,9 @@ export const StreamViewer = ({ stream, currentUserId, onBack }: StreamViewerProp
   useEffect(() => {
     joinStream();
     
-    // Real-time subscription for viewer count updates
+    // Real-time subscription for viewer count updates and stream status
     const channel = supabase
-      .channel(`stream-viewers-${stream.id}`)
+      .channel(`stream-viewer-${stream.id}`)
       .on(
         'postgres_changes',
         {
@@ -52,6 +52,26 @@ export const StreamViewer = ({ stream, currentUserId, onBack }: StreamViewerProp
         },
         () => {
           updateViewerCount();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'live_streams',
+          filter: `id=eq.${stream.id}`
+        },
+        (payload) => {
+          // Update stream status if it ends
+          if (payload.new && !payload.new.is_active) {
+            toast({
+              title: "Stream Ended",
+              description: "This stream has ended.",
+              variant: "default"
+            });
+            setTimeout(() => onBack(), 2000);
+          }
         }
       )
       .subscribe();
