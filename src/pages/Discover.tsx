@@ -167,7 +167,7 @@ const Discover = () => {
   }
 
   return (
-    <div className="max-w-lg mx-auto p-4 sm:p-6">
+    <div className="w-full max-w-lg mx-auto p-2 sm:p-4 md:p-6">
       <DiscoverHeader 
         currentUserGender={currentUserGender}
         profilesCount={profiles.length}

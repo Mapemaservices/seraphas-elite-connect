@@ -169,7 +169,11 @@ export const StreamViewer = ({ stream, currentUserId, onBack }: StreamViewerProp
           <Card className="mb-4">
             <div className="relative">
               <div className="h-64 sm:h-80 lg:h-96 bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
-                <Play className="w-20 h-20 text-white opacity-80" />
+                <div className="text-center text-white">
+                  <Play className="w-20 h-20 mx-auto mb-4 opacity-80" />
+                  <p className="text-lg font-semibold">Live Stream</p>
+                  <p className="text-sm opacity-80">Camera feed would appear here</p>
+                </div>
               </div>
               
               <div className="absolute top-4 left-4">

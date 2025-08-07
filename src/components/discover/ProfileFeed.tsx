@@ -124,55 +124,55 @@ const ProfileFeedCard = ({
   onMessage
 }: ProfileFeedCardProps) => {
   return (
-    <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 animate-fade-in">
-      <div className="relative h-96 bg-gradient-to-b from-transparent to-black/50">
+    <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-all duration-300 animate-fade-in w-full">
+      <div className="relative h-80 sm:h-96 bg-gradient-to-b from-transparent to-black/50">
         <Avatar className="w-full h-full rounded-none">
           <AvatarImage 
             src={profile.profile_image_url || ""} 
-            className="object-cover"
+            className="object-cover w-full h-full"
           />
-          <AvatarFallback className="rounded-none text-6xl bg-gradient-to-r from-pink-500 to-purple-600 text-white">
+          <AvatarFallback className="rounded-none text-4xl sm:text-6xl bg-gradient-to-r from-pink-500 to-purple-600 text-white w-full h-full flex items-center justify-center">
             {profile.first_name?.[0] || "?"}
           </AvatarFallback>
         </Avatar>
         
         {/* Floating action buttons */}
-        <div className="absolute bottom-4 right-4 flex flex-col space-y-2">
+        <div className="absolute bottom-2 right-2 sm:bottom-4 sm:right-4 flex flex-col space-y-2">
           <Button
             size="lg"
             onClick={onLike}
             disabled={isLiked}
-            className={`rounded-full w-14 h-14 shadow-lg transition-all duration-200 ${
+            className={`rounded-full w-12 h-12 sm:w-14 sm:h-14 shadow-lg transition-all duration-200 ${
               isLiked 
                 ? 'bg-gray-400 cursor-not-allowed' 
                 : 'bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 hover:scale-110'
             }`}
           >
-            <Heart className={`w-6 h-6 ${isLiked ? 'fill-current' : ''}`} />
+            <Heart className={`w-5 h-5 sm:w-6 sm:h-6 ${isLiked ? 'fill-current' : ''}`} />
           </Button>
           <Button
             size="lg"
             onClick={onMessage}
-            className="rounded-full w-14 h-14 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg transition-all duration-200 hover:scale-110"
+            className="rounded-full w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg transition-all duration-200 hover:scale-110"
           >
-            <MessageCircle className="w-6 h-6" />
+            <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" />
           </Button>
         </div>
         
         {/* Profile info overlay */}
-        <div className="absolute bottom-4 left-4 right-20 text-white">
-          <h2 className="text-2xl font-bold mb-1 drop-shadow-lg">
+        <div className="absolute bottom-2 left-2 right-16 sm:bottom-4 sm:left-4 sm:right-20 text-white">
+          <h2 className="text-lg sm:text-2xl font-bold mb-1 drop-shadow-lg">
             {profile.first_name}
             {profile.age && (
-              <span className="text-lg font-normal ml-2">{profile.age}</span>
+              <span className="text-sm sm:text-lg font-normal ml-2">{profile.age}</span>
             )}
             {profile.is_premium && (
-              <Crown className="inline w-5 h-5 ml-2 text-yellow-400 drop-shadow-lg" />
+              <Crown className="inline w-4 h-4 sm:w-5 sm:h-5 ml-2 text-yellow-400 drop-shadow-lg" />
             )}
           </h2>
           {profile.location && (
-            <p className="flex items-center text-sm opacity-90 drop-shadow-md">
-              <MapPin className="w-4 h-4 mr-1" />
+            <p className="flex items-center text-xs sm:text-sm opacity-90 drop-shadow-md">
+              <MapPin className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
               {profile.location}
             </p>
           )}
