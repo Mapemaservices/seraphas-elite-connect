@@ -5,7 +5,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Play, Square, Settings, Camera, CameraOff } from 'lucide-react';
+import { Play, Square, Settings, Camera, CameraOff, Crown, Users } from 'lucide-react';
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -199,53 +200,72 @@ export const StreamControls = ({
 
   if (activeStream) {
     return (
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center text-red-600">
-            <div className="w-3 h-3 bg-red-500 rounded-full mr-2 animate-pulse" />
-            Currently Live
+      <Card className="mb-8 border-0 bg-card/80 backdrop-blur-sm overflow-hidden">
+        <div className="bg-gradient-to-r from-red-500/20 to-pink-500/20 p-6 border-b border-border/50">
+          <CardTitle className="flex items-center text-xl">
+            <div className="w-10 h-10 bg-red-500/20 rounded-xl flex items-center justify-center mr-3">
+              <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
+            </div>
+            You're Live!
           </CardTitle>
-        </CardHeader>
-        <CardContent>
+          <p className="text-muted-foreground mt-2">Your stream is broadcasting to viewers</p>
+        </div>
+        <CardContent className="p-6">
           {/* Live camera preview */}
           {isCameraOn && (
-            <div className="mb-4">
+            <div className="mb-6 relative rounded-2xl overflow-hidden bg-black">
               <video
                 ref={videoRef}
                 autoPlay
                 muted
                 playsInline
-                className="w-full h-48 bg-black rounded-lg object-cover"
+                className="w-full h-64 object-cover"
               />
+              <div className="absolute top-4 left-4">
+                <Badge className="bg-red-500/90 text-white backdrop-blur-sm animate-pulse">
+                  ● LIVE
+                </Badge>
+              </div>
             </div>
           )}
           
-          <div className="space-y-2 mb-4">
-            <h3 className="font-semibold">{activeStream.title}</h3>
+          {/* Stream Info */}
+          <div className="space-y-4 mb-6 p-4 rounded-2xl bg-secondary/20 border border-border/50">
+            <h3 className="font-bold text-lg text-foreground">{activeStream.title}</h3>
             {activeStream.description && (
-              <p className="text-gray-600">{activeStream.description}</p>
+              <p className="text-muted-foreground leading-relaxed">{activeStream.description}</p>
             )}
-            {activeStream.is_premium_only && (
-              <div className="text-yellow-600 text-sm">Premium Only Stream</div>
-            )}
+            <div className="flex items-center gap-2">
+              {activeStream.is_premium_only && (
+                <Badge className="bg-yellow-500/90 text-white">
+                  <Crown className="w-3 h-3 mr-1" />
+                  Premium Only
+                </Badge>
+              )}
+              <Badge variant="secondary" className="bg-background/50">
+                <Users className="w-3 h-3 mr-1" />
+                Live viewers
+              </Badge>
+            </div>
           </div>
           
-          <div className="flex space-x-2">
+          {/* Controls */}
+          <div className="flex gap-3">
             <Button 
               onClick={endStream} 
               disabled={isEnding}
               variant="destructive"
-              className="flex-1"
+              className="flex-1 h-12 rounded-xl font-semibold"
             >
-              <Square className="w-4 h-4 mr-2" />
-              {isEnding ? 'Ending...' : 'End Stream'}
+              <Square className="w-5 h-5 mr-2" />
+              {isEnding ? 'Ending Stream...' : 'End Stream'}
             </Button>
             <Button
               onClick={isCameraOn ? stopCamera : startCamera}
               variant="outline"
-              className="px-4"
+              className="px-6 h-12 rounded-xl"
             >
-              {isCameraOn ? <CameraOff className="w-4 h-4" /> : <Camera className="w-4 h-4" />}
+              {isCameraOn ? <CameraOff className="w-5 h-5" /> : <Camera className="w-5 h-5" />}
             </Button>
           </div>
         </CardContent>
@@ -254,78 +274,112 @@ export const StreamControls = ({
   }
 
   return (
-    <Card className="mb-6">
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Settings className="w-5 h-5 mr-2" />
-          Start Live Stream
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Camera preview */}
-        {isCameraOn && (
-          <div className="mb-4">
-            <video
-              ref={videoRef}
-              autoPlay
-              muted
-              playsInline
-              className="w-full h-48 bg-black rounded-lg object-cover"
-            />
+    <Card className="mb-8 border-0 bg-card/80 backdrop-blur-sm overflow-hidden">
+      <div className="bg-gradient-to-r from-primary/10 to-secondary/10 p-6 border-b border-border/50">
+        <CardTitle className="flex items-center text-xl">
+          <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center mr-3">
+            <Settings className="w-5 h-5 text-primary" />
           </div>
-        )}
-        
-        {/* Camera controls */}
-        <div className="flex space-x-2 mb-4">
+          Start Your Live Stream
+        </CardTitle>
+        <p className="text-muted-foreground mt-2">Set up your camera and go live to connect with your audience</p>
+      </div>
+      <CardContent className="p-6 space-y-6">
+        {/* Camera preview */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <Label className="text-base font-semibold">Camera Setup</Label>
+            <Badge variant={isCameraOn ? "default" : "secondary"} className="px-3 py-1">
+              {isCameraOn ? 'Active' : 'Inactive'}
+            </Badge>
+          </div>
+          
+          {isCameraOn ? (
+            <div className="relative rounded-2xl overflow-hidden bg-black">
+              <video
+                ref={videoRef}
+                autoPlay
+                muted
+                playsInline
+                className="w-full h-64 object-cover"
+              />
+              <div className="absolute top-4 left-4">
+                <Badge className="bg-red-500/90 text-white backdrop-blur-sm animate-pulse">
+                  ● Recording
+                </Badge>
+              </div>
+            </div>
+          ) : (
+            <div className="h-64 bg-gradient-to-br from-muted/50 to-muted rounded-2xl flex items-center justify-center border-2 border-dashed border-border">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Camera className="w-8 h-8 text-primary" />
+                </div>
+                <p className="text-muted-foreground font-medium">Camera preview will appear here</p>
+                <p className="text-sm text-muted-foreground/80 mt-1">Start your camera to see the preview</p>
+              </div>
+            </div>
+          )}
+          
           <Button
             onClick={isCameraOn ? stopCamera : startCamera}
             variant={isCameraOn ? "destructive" : "default"}
-            className="flex-1"
+            className="w-full h-12 rounded-xl font-semibold"
           >
-            {isCameraOn ? <CameraOff className="w-4 h-4 mr-2" /> : <Camera className="w-4 h-4 mr-2" />}
+            {isCameraOn ? <CameraOff className="w-5 h-5 mr-2" /> : <Camera className="w-5 h-5 mr-2" />}
             {isCameraOn ? 'Stop Camera' : 'Start Camera'}
           </Button>
         </div>
         
-        <div>
-          <Label htmlFor="stream-title">Stream Title</Label>
-          <Input
-            id="stream-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Enter stream title"
-            maxLength={100}
-          />
-        </div>
-        
-        <div>
-          <Label htmlFor="stream-description">Description (Optional)</Label>
-          <Textarea
-            id="stream-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe your stream"
-            rows={3}
-            maxLength={500}
-          />
-        </div>
+        {/* Stream Details */}
+        <div className="space-y-4">
+          <Label className="text-base font-semibold">Stream Details</Label>
+          
+          <div className="space-y-2">
+            <Label htmlFor="stream-title" className="text-sm font-medium">Title *</Label>
+            <Input
+              id="stream-title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="What's your stream about?"
+              maxLength={100}
+              className="h-12 rounded-xl border-border/50 bg-background/50 backdrop-blur-sm"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="stream-description" className="text-sm font-medium">Description</Label>
+            <Textarea
+              id="stream-description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Tell viewers what to expect..."
+              rows={3}
+              maxLength={500}
+              className="rounded-xl border-border/50 bg-background/50 backdrop-blur-sm resize-none"
+            />
+          </div>
 
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="premium-only"
-            checked={isPremiumOnly}
-            onCheckedChange={setIsPremiumOnly}
-          />
-          <Label htmlFor="premium-only">Premium Only Stream</Label>
+          <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/20 border border-border/50">
+            <div className="space-y-1">
+              <Label htmlFor="premium-only" className="text-sm font-medium">Premium Only Stream</Label>
+              <p className="text-xs text-muted-foreground">Limit access to premium members only</p>
+            </div>
+            <Switch
+              id="premium-only"
+              checked={isPremiumOnly}
+              onCheckedChange={setIsPremiumOnly}
+            />
+          </div>
         </div>
 
         <Button 
           onClick={startStream} 
           disabled={isStarting || !title.trim() || !isCameraOn}
-          className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white"
+          className="w-full h-14 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground font-bold text-lg rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <Play className="w-4 h-4 mr-2" />
-          {isStarting ? 'Starting...' : 'Start Stream'}
+          <Play className="w-5 h-5 mr-3" />
+          {isStarting ? 'Going Live...' : 'Go Live'}
         </Button>
       </CardContent>
     </Card>

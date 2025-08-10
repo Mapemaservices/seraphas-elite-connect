@@ -189,132 +189,141 @@ export const StreamViewer = ({ stream, currentUserId, onBack }: StreamViewerProp
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-4 sm:p-6">
-      <div className="mb-4">
-        <Button 
-          onClick={onBack}
-          variant="outline"
-          className="mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Streams
-        </Button>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/10">
+      <div className="max-w-7xl mx-auto p-4 sm:p-6">
+        {/* Navigation */}
+        <div className="mb-6">
+          <Button 
+            onClick={onBack}
+            variant="ghost"
+            className="hover:bg-secondary/50 rounded-xl"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Streams
+          </Button>
+        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Stream Area */}
-        <div className="lg:col-span-2">
-          <Card className="mb-4">
-            <div className="relative">
-              {hasStreamAccess && streamConnection ? (
-                <div className="h-64 sm:h-80 lg:h-96 bg-black flex items-center justify-center">
-                  <div className="text-center text-white">
-                    <div className="w-full h-full bg-gradient-to-br from-pink-500/20 to-purple-600/20 rounded-lg flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                          <Play className="w-10 h-10 text-white" />
-                        </div>
-                        <p className="text-lg font-semibold">Live Camera Feed</p>
-                        <p className="text-sm opacity-80">Connected to {stream.streamer_profile?.first_name}'s stream</p>
-                        <div className="mt-4 text-xs opacity-60">
-                          Stream ID: {streamConnection.connection_data?.stream_id}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Main Stream Area */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Video Player */}
+            <Card className="overflow-hidden border-0 bg-card/80 backdrop-blur-sm">
+              <div className="relative group">
+                {hasStreamAccess && streamConnection ? (
+                  <div className="aspect-video bg-black flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20">
+                      <div className="w-full h-full flex items-center justify-center">
+                        <div className="text-center text-white">
+                          <div className="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                            <Play className="w-12 h-12 text-white" />
+                          </div>
+                          <h3 className="text-2xl font-bold mb-2">Live Camera Feed</h3>
+                          <p className="text-white/80 mb-4">Connected to {stream.streamer_profile?.first_name}'s stream</p>
+                          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm">
+                            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                            <span className="text-sm font-medium">Stream Active</span>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ) : (
-                <div className="h-64 sm:h-80 lg:h-96 bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
-                  <div className="text-center text-white">
-                    <Play className="w-20 h-20 mx-auto mb-4 opacity-80" />
-                    <p className="text-lg font-semibold">Loading Stream...</p>
-                    <p className="text-sm opacity-80">Connecting to camera feed</p>
-                  </div>
-                </div>
-              )}
-              
-              <div className="absolute top-4 left-4">
-                <Badge variant="destructive" className="bg-red-500 text-white animate-pulse">
-                  ● LIVE
-                </Badge>
-              </div>
-              
-              <div className="absolute top-4 right-4">
-                <Badge variant="secondary" className="bg-black/50 text-white">
-                  <Users className="w-3 h-3 mr-1" />
-                  {viewerCount}
-                </Badge>
-              </div>
-
-              {stream.is_premium_only && (
-                <div className="absolute bottom-4 right-4">
-                  <Badge className="bg-yellow-500 text-white">
-                    <Crown className="w-3 h-3 mr-1" />
-                    Premium
-                  </Badge>
-                </div>
-              )}
-            </div>
-          </Card>
-
-          {/* Stream Info */}
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-start space-x-4">
-                  <Avatar className="w-12 h-12">
-                    <AvatarImage src={stream.streamer_profile?.profile_image_url || ""} />
-                    <AvatarFallback className="bg-gradient-to-r from-pink-500 to-purple-600 text-white">
-                      {stream.streamer_profile?.first_name?.[0] || "?"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1">
-                      {stream.title}
-                    </h1>
-                    <div className="flex items-center space-x-2 text-gray-600">
-                      <span>{stream.streamer_profile?.first_name || 'Anonymous'}</span>
-                      {stream.streamer_profile?.is_premium && (
-                        <Crown className="w-4 h-4 text-yellow-500" />
-                      )}
+                ) : (
+                  <div className="aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-primary/30 to-secondary/30"></div>
+                    <div className="text-center text-white relative z-10">
+                      <div className="w-24 h-24 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-6 backdrop-blur-sm">
+                        <Play className="w-12 h-12 text-white animate-pulse" />
+                      </div>
+                      <h3 className="text-2xl font-bold mb-2">Connecting to Stream...</h3>
+                      <p className="text-white/80">Loading camera feed</p>
                     </div>
                   </div>
+                )}
+                
+                {/* Overlay badges */}
+                <div className="absolute top-4 left-4">
+                  <Badge className="bg-red-500/90 text-white backdrop-blur-sm animate-pulse border-0">
+                    ● LIVE
+                  </Badge>
                 </div>
                 
-                <div className="flex space-x-2">
+                <div className="absolute top-4 right-4 flex gap-2">
+                  <Badge className="bg-black/70 text-white backdrop-blur-sm border-0">
+                    <Users className="w-3 h-3 mr-1" />
+                    {viewerCount}
+                  </Badge>
+                  {stream.is_premium_only && (
+                    <Badge className="bg-yellow-500/90 text-white backdrop-blur-sm border-0">
+                      <Crown className="w-3 h-3 mr-1" />
+                      Premium
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Interactive controls overlay */}
+                <div className="absolute bottom-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <Button
                     onClick={handleLike}
-                    variant="outline"
                     size="sm"
-                    className="text-pink-600 border-pink-200 hover:bg-pink-50"
+                    className="bg-red-500/90 hover:bg-red-600/90 text-white backdrop-blur-sm border-0 rounded-full"
                   >
                     <Heart className="w-4 h-4 mr-1" />
                     {likes}
                   </Button>
                   <Button
                     onClick={handleShare}
-                    variant="outline"
                     size="sm"
+                    className="bg-black/70 hover:bg-black/80 text-white backdrop-blur-sm border-0 rounded-full"
                   >
                     <Share2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
-              
-              {stream.description && (
-                <p className="text-gray-700 leading-relaxed">{stream.description}</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            </Card>
 
-        {/* Chat Area */}
-        <div className="lg:col-span-1">
-          <LiveStreamChat
-            streamId={stream.id}
-            currentUserId={currentUserId}
-            viewerCount={viewerCount}
-          />
+            {/* Stream Info */}
+            <Card className="border-0 bg-card/80 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4 mb-6">
+                  <Avatar className="w-16 h-16 ring-2 ring-primary/20">
+                    <AvatarImage src={stream.streamer_profile?.profile_image_url || ""} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground text-lg font-bold">
+                      {stream.streamer_profile?.first_name?.[0] || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
+                      {stream.title}
+                    </h1>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <span className="font-medium">{stream.streamer_profile?.first_name || 'Anonymous'}</span>
+                      {stream.streamer_profile?.is_premium && (
+                        <Crown className="w-4 h-4 text-yellow-500" />
+                      )}
+                      <span className="text-xs bg-secondary px-2 py-1 rounded-full">Streamer</span>
+                    </div>
+                  </div>
+                </div>
+                
+                {stream.description && (
+                  <div className="p-4 rounded-xl bg-secondary/20 border border-border/50">
+                    <p className="text-foreground leading-relaxed">{stream.description}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Chat Area */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-6">
+              <LiveStreamChat
+                streamId={stream.id}
+                currentUserId={currentUserId}
+                viewerCount={viewerCount}
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
