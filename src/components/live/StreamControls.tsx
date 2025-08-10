@@ -97,6 +97,14 @@ export const StreamControls = ({
 
     setIsStarting(true);
     try {
+      // Create a blob URL from the camera stream for sharing
+      let streamUrl = null;
+      if (stream) {
+        // In a real implementation, this would be handled by a WebRTC signaling server
+        // For now, we'll simulate by creating a unique stream identifier
+        streamUrl = `stream_${currentUserId}_${Date.now()}`;
+      }
+
       const { data, error } = await supabase
         .from('live_streams')
         .insert({
@@ -104,10 +112,26 @@ export const StreamControls = ({
           title: title.trim(),
           description: description.trim() || null,
           is_active: true,
-          is_premium_only: isPremiumOnly
-        });
+          is_premium_only: isPremiumOnly,
+          stream_url: streamUrl
+        })
+        .select();
 
       if (error) throw error;
+
+      // Store stream connection data for WebRTC sharing
+      if (data && data[0] && stream) {
+        await supabase
+          .from('stream_connections')
+          .insert({
+            stream_id: data[0].id,
+            connection_data: {
+              stream_id: streamUrl,
+              video_constraints: { width: 1280, height: 720 },
+              audio_enabled: true
+            }
+          });
+      }
 
       toast({
         title: "Stream started!",

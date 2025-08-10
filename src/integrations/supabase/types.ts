@@ -83,6 +83,7 @@ export type Database = {
           id: string
           is_active: boolean | null
           is_premium_only: boolean | null
+          stream_url: string | null
           streamer_id: string
           title: string
           viewer_count: number | null
@@ -94,6 +95,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_premium_only?: boolean | null
+          stream_url?: string | null
           streamer_id: string
           title: string
           viewer_count?: number | null
@@ -105,6 +107,7 @@ export type Database = {
           id?: string
           is_active?: boolean | null
           is_premium_only?: boolean | null
+          stream_url?: string | null
           streamer_id?: string
           title?: string
           viewer_count?: number | null
@@ -240,6 +243,30 @@ export type Database = {
           profile_image_url?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      stream_connections: {
+        Row: {
+          connection_data: Json | null
+          created_at: string
+          id: string
+          stream_id: string
+          updated_at: string
+        }
+        Insert: {
+          connection_data?: Json | null
+          created_at?: string
+          id?: string
+          stream_id: string
+          updated_at?: string
+        }
+        Update: {
+          connection_data?: Json | null
+          created_at?: string
+          id?: string
+          stream_id?: string
+          updated_at?: string
         }
         Relationships: []
       }

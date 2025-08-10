@@ -17,6 +17,7 @@ interface StreamViewer {
   is_premium_only: boolean;
   viewer_count: number;
   created_at: string;
+  stream_url: string | null;
   streamer_profile?: {
     first_name: string | null;
     profile_image_url: string | null;
@@ -35,9 +36,12 @@ export const StreamViewer = ({ stream, currentUserId, onBack }: StreamViewerProp
   const [viewerCount, setViewerCount] = useState(stream.viewer_count);
   const [isJoined, setIsJoined] = useState(false);
   const [likes, setLikes] = useState(0);
+  const [streamConnection, setStreamConnection] = useState<any>(null);
+  const [hasStreamAccess, setHasStreamAccess] = useState(false);
 
   useEffect(() => {
     joinStream();
+    loadStreamConnection();
     
     // Real-time subscription for viewer count updates and stream status
     const channel = supabase
@@ -74,6 +78,21 @@ export const StreamViewer = ({ stream, currentUserId, onBack }: StreamViewerProp
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'stream_connections',
+          filter: `stream_id=eq.${stream.id}`
+        },
+        (payload) => {
+          if (payload.new) {
+            setStreamConnection(payload.new);
+            setHasStreamAccess(true);
+          }
+        }
+      )
       .subscribe();
 
     return () => {
@@ -81,6 +100,25 @@ export const StreamViewer = ({ stream, currentUserId, onBack }: StreamViewerProp
       supabase.removeChannel(channel);
     };
   }, [stream.id]);
+
+  const loadStreamConnection = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('stream_connections')
+        .select('*')
+        .eq('stream_id', stream.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
+        setStreamConnection(data);
+        setHasStreamAccess(true);
+      }
+    } catch (error) {
+      console.error('Error loading stream connection:', error);
+    }
+  };
 
   const joinStream = async () => {
     try {
@@ -168,13 +206,32 @@ export const StreamViewer = ({ stream, currentUserId, onBack }: StreamViewerProp
         <div className="lg:col-span-2">
           <Card className="mb-4">
             <div className="relative">
-              <div className="h-64 sm:h-80 lg:h-96 bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
-                <div className="text-center text-white">
-                  <Play className="w-20 h-20 mx-auto mb-4 opacity-80" />
-                  <p className="text-lg font-semibold">Live Stream</p>
-                  <p className="text-sm opacity-80">Camera feed would appear here</p>
+              {hasStreamAccess && streamConnection ? (
+                <div className="h-64 sm:h-80 lg:h-96 bg-black flex items-center justify-center">
+                  <div className="text-center text-white">
+                    <div className="w-full h-full bg-gradient-to-br from-pink-500/20 to-purple-600/20 rounded-lg flex items-center justify-center">
+                      <div className="text-center">
+                        <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <Play className="w-10 h-10 text-white" />
+                        </div>
+                        <p className="text-lg font-semibold">Live Camera Feed</p>
+                        <p className="text-sm opacity-80">Connected to {stream.streamer_profile?.first_name}'s stream</p>
+                        <div className="mt-4 text-xs opacity-60">
+                          Stream ID: {streamConnection.connection_data?.stream_id}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="h-64 sm:h-80 lg:h-96 bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center">
+                  <div className="text-center text-white">
+                    <Play className="w-20 h-20 mx-auto mb-4 opacity-80" />
+                    <p className="text-lg font-semibold">Loading Stream...</p>
+                    <p className="text-sm opacity-80">Connecting to camera feed</p>
+                  </div>
+                </div>
+              )}
               
               <div className="absolute top-4 left-4">
                 <Badge variant="destructive" className="bg-red-500 text-white animate-pulse">

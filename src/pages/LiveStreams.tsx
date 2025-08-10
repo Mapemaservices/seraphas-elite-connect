@@ -20,6 +20,7 @@ interface LiveStream {
   is_premium_only: boolean;
   viewer_count: number;
   created_at: string;
+  stream_url: string | null;
   streamer_profile?: {
     first_name: string | null;
     profile_image_url: string | null;
@@ -93,7 +94,7 @@ const LiveStreams = () => {
     try {
       const { data: streamsData, error: streamsError } = await supabase
         .from('live_streams')
-        .select('*')
+        .select('*, stream_url')
         .eq('is_active', true)
         .order('created_at', { ascending: false });
 
