@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Play, Users, Crown, Lock } from 'lucide-react';
+import { Play, Users, Crown, Lock, Heart, Share2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSubscription } from "@/contexts/SubscriptionContext";
@@ -152,6 +152,14 @@ const LiveStreams = () => {
     setSelectedStream(stream);
   };
 
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast({
+      title: "Link copied!",
+      description: "Stream link has been copied to clipboard",
+    });
+  };
+
   const handleUpgrade = async () => {
     try {
       await createCheckout('monthly');
@@ -192,163 +200,141 @@ const LiveStreams = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-secondary/10">
-      <div className="max-w-7xl mx-auto p-4 sm:p-6">
-        {/* Modern Header */}
-        <div className="mb-12 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-sm font-medium mb-6 animate-fade-in">
+    <div className="min-h-screen bg-black overflow-hidden">
+      {/* Header (minimal, TikTok-style) */}
+      <div className="fixed top-0 left-0 right-0 z-50 p-4 bg-gradient-to-b from-black/80 to-transparent">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-            Live Now
+            <span className="text-white font-semibold">LIVE</span>
           </div>
-          <h1 className="text-5xl sm:text-6xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent mb-4 animate-fade-in">
-            Live Streams
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto animate-fade-in">
-            Connect with creators in real-time. Watch, interact, and discover amazing content from our community.
-          </p>
-        </div>
-
-        {/* Stream Controls */}
-        {currentUserId && (
-          <div className="animate-fade-in">
+          {currentUserId && (
             <StreamControls
               currentUserId={currentUserId}
               activeStream={activeStream}
               onStreamStarted={handleStreamStarted}
               onStreamEnded={handleStreamEnded}
             />
-          </div>
-        )}
-
-        {streams.length === 0 ? (
-          <div className="text-center py-20 animate-fade-in">
-            <div className="relative mb-8">
-              <div className="w-32 h-32 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-3xl flex items-center justify-center mx-auto backdrop-blur-sm border border-border/50">
-                <Play className="w-16 h-16 text-primary" />
-              </div>
-              <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs font-bold">0</span>
-              </div>
-            </div>
-            <h2 className="text-3xl font-bold text-foreground mb-4">No Live Streams</h2>
-            <p className="text-muted-foreground text-lg mb-8 max-w-md mx-auto">
-              Be the first to go live! Start streaming and connect with your audience.
-            </p>
-            {currentUserId && (
-              <div className="text-sm text-muted-foreground">
-                Use the controls above to start your first stream
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="animate-fade-in">
-            {/* Stats Bar */}
-            <div className="flex items-center justify-between mb-8 p-4 rounded-2xl bg-card border border-border/50 backdrop-blur-sm">
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-                  <span className="font-semibold text-foreground">{streams.length} Live</span>
-                </div>
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Users className="w-4 h-4" />
-                  <span>{streams.reduce((total, stream) => total + stream.viewer_count, 0)} watching</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Stream Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {streams.map((stream, index) => (
-                <Card 
-                  key={stream.id} 
-                  className="group overflow-hidden border-0 bg-card/80 backdrop-blur-sm hover:bg-card transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 animate-fade-in"
-                  style={{ animationDelay: `${index * 100}ms` }}
-                >
-                  <div className="relative overflow-hidden">
-                    {/* Thumbnail */}
-                    <div className="aspect-video bg-gradient-to-br from-primary/20 via-primary/10 to-secondary/20 flex items-center justify-center relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-br from-primary/60 to-secondary/60 opacity-80"></div>
-                      <Play className="w-16 h-16 text-white opacity-90 relative z-10 group-hover:scale-110 transition-transform duration-300" />
-                      
-                      {/* Animated overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    </div>
-                    
-                    {/* Badges */}
-                    <div className="absolute top-3 left-3">
-                      <Badge className="bg-red-500/90 text-white backdrop-blur-sm border-0 animate-pulse">
-                        ● LIVE
-                      </Badge>
-                    </div>
-                    
-                    <div className="absolute top-3 right-3 flex gap-2">
-                      {stream.is_premium_only && (
-                        <Badge className="bg-yellow-500/90 text-white backdrop-blur-sm border-0">
-                          <Crown className="w-3 h-3 mr-1" />
-                          Premium
-                        </Badge>
-                      )}
-                      <Badge className="bg-black/70 text-white backdrop-blur-sm border-0">
-                        <Users className="w-3 h-3 mr-1" />
-                        {stream.viewer_count}
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  <CardContent className="p-6">
-                    {/* Streamer Info */}
-                    <div className="flex items-start gap-3 mb-4">
-                      <Avatar className="w-12 h-12 ring-2 ring-primary/20">
-                        <AvatarImage src={stream.streamer_profile?.profile_image_url || ""} />
-                        <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-primary-foreground font-semibold">
-                          {stream.streamer_profile?.first_name?.[0] || "?"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-bold text-foreground text-lg leading-tight mb-1 group-hover:text-primary transition-colors duration-200">
-                          {stream.title}
-                        </h3>
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <span className="text-sm">{stream.streamer_profile?.first_name || 'Anonymous'}</span>
-                          {stream.streamer_profile?.is_premium && (
-                            <Crown className="w-3 h-3 text-yellow-500" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* Description */}
-                    {stream.description && (
-                      <p className="text-muted-foreground text-sm leading-relaxed mb-6 line-clamp-2">
-                        {stream.description}
-                      </p>
-                    )}
-                    
-                    {/* Watch Button */}
-                    <Button 
-                      onClick={() => handleWatchStream(stream)}
-                      className="w-full h-12 bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground font-semibold rounded-xl transition-all duration-300 hover:shadow-lg hover:shadow-primary/20 group-hover:scale-[1.02]"
-                      disabled={stream.is_premium_only && !isPremium}
-                    >
-                      {stream.is_premium_only && !isPremium ? (
-                        <>
-                          <Lock className="w-5 h-5 mr-2" />
-                          Premium Required
-                        </>
-                      ) : (
-                        <>
-                          <Play className="w-5 h-5 mr-2" />
-                          Watch Stream
-                        </>
-                      )}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {streams.length === 0 ? (
+        <div className="h-screen flex flex-col items-center justify-center text-white">
+          <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mb-6 backdrop-blur-sm">
+            <Play className="w-12 h-12 text-white" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">No Live Streams</h2>
+          <p className="text-white/70 text-center max-w-xs">
+            Be the first to go live and connect with your audience
+          </p>
+        </div>
+      ) : (
+        <div className="h-screen overflow-y-auto snap-y snap-mandatory">
+          {streams.map((stream, index) => (
+            <div
+              key={stream.id}
+              className="h-screen snap-start relative flex"
+              onClick={() => handleWatchStream(stream)}
+            >
+              {/* Full-screen video background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-pink-900 to-blue-900">
+                <div className="w-full h-full bg-black/20 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-32 h-32 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-8 backdrop-blur-sm">
+                      <Play className="w-16 h-16 text-white" />
+                    </div>
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse mx-auto"></div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right side actions (TikTok-style) */}
+              <div className="absolute right-4 bottom-20 flex flex-col gap-4 z-20">
+                <div className="flex flex-col items-center">
+                  <Avatar className="w-12 h-12 ring-2 ring-white">
+                    <AvatarImage src={stream.streamer_profile?.profile_image_url || ""} />
+                    <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-bold">
+                      {stream.streamer_profile?.first_name?.[0] || "?"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center -mt-2">
+                    <span className="text-white text-xs font-bold">+</span>
+                  </div>
+                </div>
+
+                <button className="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <Heart className="w-6 h-6 text-white" />
+                </button>
+
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleShare();
+                  }}
+                  className="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm"
+                >
+                  <Share2 className="w-6 h-6 text-white" />
+                </button>
+
+                <div className="w-12 h-12 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-white text-sm font-bold text-center">
+                  {stream.viewer_count}
+                </span>
+              </div>
+
+              {/* Bottom info overlay */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent z-10">
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-white font-bold text-lg">
+                      @{stream.streamer_profile?.first_name || 'anonymous'}
+                    </span>
+                    {stream.streamer_profile?.is_premium && (
+                      <Crown className="w-5 h-5 text-yellow-400" />
+                    )}
+                  </div>
+                  <h2 className="text-white text-xl font-bold mb-2 leading-tight">
+                    {stream.title}
+                  </h2>
+                  {stream.description && (
+                    <p className="text-white/80 text-sm leading-relaxed line-clamp-2">
+                      {stream.description}
+                    </p>
+                  )}
+                </div>
+
+                {/* Live badges */}
+                <div className="flex items-center gap-2">
+                  <div className="px-3 py-1 bg-red-500 rounded-full flex items-center gap-1">
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    <span className="text-white text-xs font-bold">LIVE</span>
+                  </div>
+                  <div className="px-3 py-1 bg-black/50 rounded-full backdrop-blur-sm">
+                    <span className="text-white text-xs">{stream.viewer_count} watching</span>
+                  </div>
+                  {stream.is_premium_only && (
+                    <div className="px-3 py-1 bg-yellow-500 rounded-full">
+                      <span className="text-black text-xs font-bold">Premium</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tap to watch overlay */}
+              <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors duration-300 cursor-pointer z-5">
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
+                  <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                    <Play className="w-10 h-10 text-white ml-1" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
