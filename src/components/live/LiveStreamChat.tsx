@@ -161,9 +161,9 @@ export const LiveStreamChat = ({ streamId, currentUserId, viewerCount }: LiveStr
 
   return (
     <div className="h-full flex flex-col bg-transparent">
-      <div className="mb-4">
+      <div className="mb-3 sm:mb-4">
         <div className="flex items-center justify-between text-white">
-          <span className="font-bold">Live Chat</span>
+          <span className="font-bold text-sm sm:text-base">Live Chat</span>
           <div className="flex items-center gap-1 px-2 py-1 bg-white/20 rounded-full backdrop-blur-sm">
             <Users className="w-3 h-3" />
             <span className="text-xs font-bold">{viewerCount}</span>
@@ -171,27 +171,27 @@ export const LiveStreamChat = ({ streamId, currentUserId, viewerCount }: LiveStr
         </div>
       </div>
       
-      <div className="flex-1 flex flex-col">
-        <ScrollArea className="flex-1 pr-2">
-          <div className="space-y-3">
+      <div className="flex-1 flex flex-col min-h-0">
+        <ScrollArea className="flex-1 pr-1 sm:pr-2">
+          <div className="space-y-2 sm:space-y-3">
             {messages.map((message) => (
               <div key={message.id} className="flex items-start space-x-2">
-                <Avatar className="w-6 h-6 flex-shrink-0">
+                <Avatar className="w-5 sm:w-6 h-5 sm:h-6 flex-shrink-0">
                   <AvatarImage src={message.user_profile?.profile_image_url || ""} />
                   <AvatarFallback className="text-xs bg-gradient-to-r from-pink-500 to-purple-600 text-white">
                     {message.user_profile?.first_name?.[0] || "?"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center space-x-2 mb-1">
+                  <div className="flex items-center space-x-1 sm:space-x-2 mb-0.5 sm:mb-1">
                     <span className="text-xs font-medium text-white truncate">
                       {message.user_profile?.first_name || 'Anonymous'}
                     </span>
                     {message.user_profile?.is_premium && (
-                      <div className="w-3 h-3 bg-yellow-400 rounded-full flex-shrink-0"></div>
+                      <div className="w-2.5 sm:w-3 h-2.5 sm:h-3 bg-yellow-400 rounded-full flex-shrink-0"></div>
                     )}
                   </div>
-                  <p className="text-sm text-white/90 break-words leading-tight">{message.message}</p>
+                  <p className="text-xs sm:text-sm text-white/90 break-words leading-tight">{message.message}</p>
                 </div>
               </div>
             ))}
@@ -199,7 +199,7 @@ export const LiveStreamChat = ({ streamId, currentUserId, viewerCount }: LiveStr
           </div>
         </ScrollArea>
         
-        <div className="mt-4 pt-4 border-t border-white/20">
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-white/20">
           <div className="flex space-x-2">
             <Input
               value={newMessage}
@@ -208,15 +208,15 @@ export const LiveStreamChat = ({ streamId, currentUserId, viewerCount }: LiveStr
               placeholder="Add a comment..."
               maxLength={200}
               disabled={isSending}
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/60 backdrop-blur-sm"
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/60 backdrop-blur-sm text-sm h-8 sm:h-10"
             />
             <Button 
               onClick={sendMessage}
               disabled={!newMessage.trim() || isSending}
               size="sm"
-              className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm"
+              className="bg-white/20 hover:bg-white/30 text-white border-0 backdrop-blur-sm h-8 sm:h-10 px-2 sm:px-3"
             >
-              <Send className="w-4 h-4" />
+              <Send className="w-3 sm:w-4 h-3 sm:h-4" />
             </Button>
           </div>
         </div>

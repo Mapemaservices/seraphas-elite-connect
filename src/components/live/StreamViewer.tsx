@@ -193,9 +193,9 @@ export const StreamViewer = ({ stream, currentUserId, onBack }: StreamViewerProp
       {/* Back button */}
       <button 
         onClick={onBack}
-        className="absolute top-4 left-4 z-50 w-10 h-10 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm"
+        className="absolute top-3 sm:top-4 left-3 sm:left-4 z-50 w-8 sm:w-10 h-8 sm:h-10 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm active:scale-95 transition-transform"
       >
-        <ArrowLeft className="w-5 h-5 text-white" />
+        <ArrowLeft className="w-4 sm:w-5 h-4 sm:h-5 text-white" />
       </button>
 
       {/* Full-screen video */}
@@ -204,11 +204,11 @@ export const StreamViewer = ({ stream, currentUserId, onBack }: StreamViewerProp
           <div className="h-full bg-black flex items-center justify-center relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-pink-900 to-blue-900">
               <div className="w-full h-full flex items-center justify-center">
-                <div className="text-center text-white">
-                  <div className="w-32 h-32 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-8 backdrop-blur-sm">
-                    <Play className="w-16 h-16 text-white" />
+                <div className="text-center text-white px-4">
+                  <div className="w-24 sm:w-32 h-24 sm:h-32 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-6 sm:mb-8 backdrop-blur-sm">
+                    <Play className="w-12 sm:w-16 h-12 sm:h-16 text-white" />
                   </div>
-                  <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse mx-auto"></div>
+                  <div className="w-2 sm:w-3 h-2 sm:h-3 bg-red-500 rounded-full animate-pulse mx-auto"></div>
                 </div>
               </div>
             </div>
@@ -216,79 +216,79 @@ export const StreamViewer = ({ stream, currentUserId, onBack }: StreamViewerProp
         ) : (
           <div className="h-full bg-gradient-to-br from-purple-900 via-pink-900 to-blue-900 flex items-center justify-center relative overflow-hidden">
             <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-purple-800 via-pink-800 to-blue-800"></div>
-            <div className="text-center text-white relative z-10">
-              <div className="w-32 h-32 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-8 backdrop-blur-sm">
-                <Play className="w-16 h-16 text-white animate-pulse" />
+            <div className="text-center text-white relative z-10 px-4">
+              <div className="w-24 sm:w-32 h-24 sm:h-32 bg-white/10 rounded-3xl flex items-center justify-center mx-auto mb-6 sm:mb-8 backdrop-blur-sm">
+                <Play className="w-12 sm:w-16 h-12 sm:h-16 text-white animate-pulse" />
               </div>
-              <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse mx-auto"></div>
+              <div className="w-2 sm:w-3 h-2 sm:h-3 bg-red-500 rounded-full animate-pulse mx-auto"></div>
             </div>
           </div>
         )}
 
         {/* Right side actions (TikTok-style) */}
-        <div className="absolute right-4 bottom-32 flex flex-col gap-4 z-20">
+        <div className="absolute right-2 sm:right-4 bottom-24 sm:bottom-32 flex flex-col gap-3 sm:gap-4 z-20">
           <div className="flex flex-col items-center">
-            <Avatar className="w-14 h-14 ring-2 ring-white">
+            <Avatar className="w-12 sm:w-14 h-12 sm:h-14 ring-2 ring-white">
               <AvatarImage src={stream.streamer_profile?.profile_image_url || ""} />
-              <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-bold text-lg">
+              <AvatarFallback className="bg-gradient-to-br from-primary to-secondary text-white font-bold text-sm sm:text-lg">
                 {stream.streamer_profile?.first_name?.[0] || "?"}
               </AvatarFallback>
             </Avatar>
-            <div className="w-7 h-7 bg-red-500 rounded-full flex items-center justify-center -mt-2 border-2 border-white">
+            <div className="w-6 sm:w-7 h-6 sm:h-7 bg-red-500 rounded-full flex items-center justify-center -mt-1.5 sm:-mt-2 border-2 border-white">
               <span className="text-white text-xs font-bold">+</span>
             </div>
           </div>
 
           <button 
             onClick={handleLike}
-            className="w-14 h-14 bg-black/50 rounded-full flex flex-col items-center justify-center backdrop-blur-sm"
+            className="w-12 sm:w-14 h-12 sm:h-14 bg-black/50 rounded-full flex flex-col items-center justify-center backdrop-blur-sm active:scale-95 transition-transform"
           >
-            <Heart className="w-7 h-7 text-white mb-1" />
+            <Heart className="w-6 sm:w-7 h-6 sm:h-7 text-white mb-0.5 sm:mb-1" />
             <span className="text-white text-xs font-bold">{likes}</span>
           </button>
 
           <button 
             onClick={handleShare}
-            className="w-14 h-14 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm"
+            className="w-12 sm:w-14 h-12 sm:h-14 bg-black/50 rounded-full flex items-center justify-center backdrop-blur-sm active:scale-95 transition-transform"
           >
-            <Share2 className="w-7 h-7 text-white" />
+            <Share2 className="w-6 sm:w-7 h-6 sm:h-7 text-white" />
           </button>
 
-          <div className="w-14 h-14 bg-black/50 rounded-full flex flex-col items-center justify-center backdrop-blur-sm">
-            <Users className="w-6 h-6 text-white mb-1" />
+          <div className="w-12 sm:w-14 h-12 sm:h-14 bg-black/50 rounded-full flex flex-col items-center justify-center backdrop-blur-sm">
+            <Users className="w-5 sm:w-6 h-5 sm:h-6 text-white mb-0.5 sm:mb-1" />
             <span className="text-white text-xs font-bold">{viewerCount}</span>
           </div>
         </div>
 
         {/* Bottom info overlay */}
-        <div className="absolute bottom-0 left-0 right-16 p-4 bg-gradient-to-t from-black/80 to-transparent z-10">
-          <div className="mb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-white font-bold text-lg">
+        <div className="absolute bottom-0 left-0 right-14 sm:right-16 p-3 sm:p-4 bg-gradient-to-t from-black/80 to-transparent z-10">
+          <div className="mb-3 sm:mb-4">
+            <div className="flex items-center gap-2 mb-1 sm:mb-2">
+              <span className="text-white font-bold text-base sm:text-lg">
                 @{stream.streamer_profile?.first_name || 'anonymous'}
               </span>
               {stream.streamer_profile?.is_premium && (
-                <Crown className="w-5 h-5 text-yellow-400" />
+                <Crown className="w-4 sm:w-5 h-4 sm:h-5 text-yellow-400" />
               )}
             </div>
-            <h2 className="text-white text-xl font-bold mb-2 leading-tight">
+            <h2 className="text-white text-lg sm:text-xl font-bold mb-1 sm:mb-2 leading-tight">
               {stream.title}
             </h2>
             {stream.description && (
-              <p className="text-white/80 text-sm leading-relaxed line-clamp-3">
+              <p className="text-white/80 text-sm leading-relaxed line-clamp-2 sm:line-clamp-3">
                 {stream.description}
               </p>
             )}
           </div>
 
           {/* Live badges */}
-          <div className="flex items-center gap-2 mb-4">
-            <div className="px-3 py-1 bg-red-500 rounded-full flex items-center gap-1">
-              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+          <div className="flex items-center gap-2 mb-3 sm:mb-4 flex-wrap">
+            <div className="px-2 sm:px-3 py-1 bg-red-500 rounded-full flex items-center gap-1">
+              <div className="w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white rounded-full animate-pulse"></div>
               <span className="text-white text-xs font-bold">LIVE</span>
             </div>
             {stream.is_premium_only && (
-              <div className="px-3 py-1 bg-yellow-500 rounded-full">
+              <div className="px-2 sm:px-3 py-1 bg-yellow-500 rounded-full">
                 <span className="text-black text-xs font-bold">Premium</span>
               </div>
             )}
@@ -297,9 +297,9 @@ export const StreamViewer = ({ stream, currentUserId, onBack }: StreamViewerProp
       </div>
 
       {/* Slide-up chat overlay */}
-      <div className="absolute bottom-0 left-0 right-0 h-96 bg-gradient-to-t from-black via-black/90 to-transparent transform translate-y-80 hover:translate-y-0 transition-transform duration-300 z-30">
-        <div className="h-full p-4 pt-8">
-          <div className="w-12 h-1 bg-white/50 rounded-full mx-auto mb-4"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-72 sm:h-96 bg-gradient-to-t from-black via-black/90 to-transparent transform translate-y-64 sm:translate-y-80 hover:translate-y-0 transition-transform duration-300 z-30 touch-pan-y">
+        <div className="h-full p-3 sm:p-4 pt-6 sm:pt-8">
+          <div className="w-12 h-1 bg-white/50 rounded-full mx-auto mb-3 sm:mb-4"></div>
           <LiveStreamChat
             streamId={stream.id}
             currentUserId={currentUserId}
